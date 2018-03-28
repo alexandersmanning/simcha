@@ -1,0 +1,31 @@
+.alex-header {
+	font-family: 'Josefin Slab', serif;
+	text-align: left;
+}
+
+.alex-button {
+	display: flex;
+	font-family: 'Roboto', sans-serif;
+	font-weight: 300;
+	align-items: center;
+	justify-content: center;
+	font-size: 11px;
+	letter-spacing: 0.2px;
+	background-color: rgba(0, 0, 0, 0.2);
+	border: 1px solid rgba(0,0,0, 0.3);
+	width: 70;
+	height: 35;
+	border-radius: 2px;
+	outline-color: transparent;
+	outline-style: none;
+}
+
+.alex-button:hover {
+	background-color: rgba(0,0,0, 0.1);
+}
+
+.alex-button:active {
+	outline-color: transparent;
+	outline-style: none;
+	box-shadow: inset 1px 1px 1px darkgrey;
+}
