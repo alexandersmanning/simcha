@@ -32,7 +32,7 @@ func GetAllPosts() ([]Post, error) {
 
 func CreatePost(p Post) error {
 	_, err := database.GetStore().Query(
-		"INSERT INTO posts(title, body) VALUES($1, $2)",
+		"INSERT INTO posts(title, body) VALUES($1, $2) RETURNING id",
 		p.Title, p.Body)
 
 	return err
