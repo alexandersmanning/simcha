@@ -1,10 +1,7 @@
 package models
 
 import (
-	"database/sql"
 	"fmt"
-	"github.com/alexandersmanning/simcha/app/shared/database"
-	_ "github.com/lib/pq"
 	"os"
 	"testing"
 )
@@ -17,18 +14,19 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
+var db *DB
+
 func setupModels() {
 	connString := "dbname=simcha_test sslmode=disable"
-	db, err := sql.Open("postgres", connString)
+	var err error
+	db, err = InitDB(connString)
 
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	database.InitStore(db)
 }
 
 func teardownModels() {
-	database.GetStore().Close()
+	db.Close()
 }

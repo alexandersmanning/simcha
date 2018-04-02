@@ -4,7 +4,6 @@ import (
 	"time"
 
 	//"github.com/gorilla/sessions"
-	"github.com/alexandersmanning/simcha/app/shared/database"
 	"github.com/alexandersmanning/webapputil"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -21,10 +20,17 @@ type User struct {
 	ModifiedAt           time.Time `json:"modifiedAt"`
 }
 
+//UserStore is the interface for all User functions that interact with the database
+type UserStore interface {
+	GetUserByEmailAndPassword(email, password string) (User, error)
+	UserExists(email string) (bool, error)
+	CreateUser(u *User) error
+}
+
 //GetUserByEmailAndPassword checks if the user is in the database, and if it is verifies if the password matches
-func GetUserByEmailAndPassword(email, password string) (User, error) {
+func (db *DB) GetUserByEmailAndPassword(email, password string) (User, error) {
 	u := User{}
-	rows, err := database.GetStore().Query(
+	rows, err := db.Query(
 		`SELECT id, email, password_digest FROM users WHERE email = $1`, email,
 	)
 
@@ -77,9 +83,9 @@ func verifyPassword(password, confirmation string) error {
 }
 
 //UserExists checks the existence of an email
-func UserExists(email string) (bool, error) {
+func (db *DB) UserExists(email string) (bool, error) {
 	var count int
-	rows, err := database.GetStore().Query("SELECT COUNT(*) FROM users WHERE email = $1", email)
+	rows, err := db.Query("SELECT COUNT(*) FROM users WHERE email = $1", email)
 
 	if err != nil {
 		return false, err
@@ -100,8 +106,8 @@ func UserExists(email string) (bool, error) {
 }
 
 //CreateUser adds user to system if they do not already exist, and have an appropriate email/password
-func (u *User) CreateUser() error {
-	if exists, err := UserExists(u.Email); err != nil {
+func (db *DB) CreateUser(u *User) error {
+	if exists, err := db.UserExists(u.Email); err != nil {
 		return err
 	} else if exists {
 		return &modelError{"Email", "already exists in the system"}
@@ -120,7 +126,7 @@ func (u *User) CreateUser() error {
 	u.CreatedAt = time.Now().UTC()
 	u.ModifiedAt = time.Now().UTC()
 
-	rows, err := database.GetStore().Query(`
+	rows, err := db.Query(`
 		INSERT INTO users (email, password_digest, session_token, created_at, modified_at)
 			VALUES ($1, $2, $3, $4, $5)
 			RETURNING id
