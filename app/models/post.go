@@ -1,37 +1,43 @@
 package models
 
-import (
-	"github.com/alexandersmanning/simcha/app/shared/database"
-)
-
+//Post is a struct for creating a simple blog post
 type Post struct {
-	Author string `json:"author"`
+	Author string `json:"Author"`
 	Body   string `json:"body"`
 	Title  string `json:"title"`
 }
 
-func GetAllPosts() ([]Post, error) {
-	rows, err := database.GetStore().Query("SELECT body, title FROM posts")
+//PostStore is the store interface for Posts
+type PostStore interface {
+	AllPosts() ([]*Post, error)
+	CreatePost(p Post) error
+}
+
+//AllPosts queries the posts table and returns a slice of Post objects, or and error
+func (db *DB) AllPosts() ([]*Post, error) {
+	rows, err := db.Query("SELECT body, title FROM posts")
 
 	if err != nil {
 		return nil, err
 	}
 
 	defer rows.Close()
-	posts := []Post{}
+
+	posts := []*Post{}
 	for rows.Next() {
 		post := Post{}
 		if err := rows.Scan(&post.Body, &post.Title); err != nil {
 			return nil, err
 		}
-		posts = append(posts, post)
+		posts = append(posts, &post)
 	}
 
 	return posts, nil
 }
 
-func CreatePost(p Post) error {
-	_, err := database.GetStore().Query(
+//CreatePost creates a new Post object, and returns an ID of the created object
+func (db *DB) CreatePost(p Post) error {
+	_, err := db.Query(
 		"INSERT INTO posts(title, body) VALUES($1, $2) RETURNING id",
 		p.Title, p.Body)
 

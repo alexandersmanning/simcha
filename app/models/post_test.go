@@ -2,12 +2,10 @@ package models
 
 import (
 	"testing"
-
-	"github.com/alexandersmanning/simcha/app/shared/database"
 )
 
 func clearPosts(t *testing.T) {
-	db := database.GetStore()
+	//db := database.GetStore()
 	_, err := db.Query("DELETE FROM posts")
 
 	if err != nil {
@@ -21,7 +19,7 @@ func TestPostCreation(t *testing.T) {
 	postHelper := func(expected int, t *testing.T) {
 		t.Helper()
 		var count int
-		rows, err := database.GetStore().Query("SELECT COUNT(*) FROM posts")
+		rows, err := db.Query("SELECT COUNT(*) FROM posts")
 
 		if err != nil {
 			t.Fatal(err)
@@ -52,7 +50,7 @@ func TestPostCreation(t *testing.T) {
 			Title:  "Test Title",
 		}
 
-		err := CreatePost(p)
+		err := db.CreatePost(p)
 
 		if err != nil {
 			t.Fatal(err)
@@ -64,7 +62,7 @@ func TestPostCreation(t *testing.T) {
 
 func TestCreatePost(t *testing.T) {
 	clearPosts(t)
-	db := database.GetStore()
+	//db := database.GetStore()
 	_, err := db.Query(
 		"INSERT INTO posts (body, title) VALUES" +
 			"('body_1', 'title_1')," +
@@ -74,7 +72,7 @@ func TestCreatePost(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	posts, err := GetAllPosts()
+	posts, err := db.AllPosts()
 	if err != nil {
 		t.Fatal(err)
 	}

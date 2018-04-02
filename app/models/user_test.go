@@ -2,12 +2,9 @@ package models
 
 import (
 	"testing"
-
-	"github.com/alexandersmanning/simcha/app/shared/database"
 )
 
 func clearUsers(t *testing.T) {
-	db := database.GetStore()
 	_, err := db.Query("DELETE FROM users")
 
 	if err != nil {
@@ -16,11 +13,9 @@ func clearUsers(t *testing.T) {
 }
 
 func TestUserExists(t *testing.T) {
-	db := database.GetStore()
-
 	existsTest := func(input string, expected bool, t *testing.T) {
 		t.Helper()
-		exists, err := UserExists(input)
+		exists, err := db.UserExists(input)
 
 		if err != nil {
 			t.Fatal(err)
@@ -81,7 +76,7 @@ func TestEnsureSessionToken(t *testing.T) {
 	}
 }
 func TestCreateUser(t *testing.T) {
-	db := database.GetStore()
+	//db := database.GetStore()
 
 	email := "fake@email.com"
 	password := "goodpassword"
@@ -89,7 +84,7 @@ func TestCreateUser(t *testing.T) {
 	errorTestHelper := func(expectedName string, user User, t *testing.T) {
 		t.Helper()
 
-		if err := user.CreateUser(); err == nil {
+		if err := db.CreateUser(&user); err == nil {
 			t.Error("Expected error, got nothing")
 		} else if ae, ok := err.(*modelError); !ok || ae.fieldName != expectedName {
 			t.Errorf("Expected error with field %s, of %s", expectedName, err.Error())
@@ -126,7 +121,7 @@ func TestCreateUser(t *testing.T) {
 	t.Run("Creates a record and returns User with id", func(t *testing.T) {
 		u := User{Email: email, Password: password, ConfirmationPassword: password}
 
-		if err := u.CreateUser(); err != nil {
+		if err := db.CreateUser(&u); err != nil {
 			t.Fatal(err)
 		}
 
@@ -151,12 +146,12 @@ func TestGetUserByEmailAndPassword(t *testing.T) {
 	password := "goodpassword"
 	u := User{Email: email, Password: password, ConfirmationPassword: password}
 
-	if err := u.CreateUser(); err != nil {
+	if err := db.CreateUser(&u); err != nil {
 		t.Fatal(err)
 	}
 
 	t.Run("User exists in system", func(t *testing.T) {
-		user, err := GetUserByEmailAndPassword(email, password)
+		user, err := db.GetUserByEmailAndPassword(email, password)
 
 		if err != nil {
 			t.Error(err)
@@ -168,7 +163,7 @@ func TestGetUserByEmailAndPassword(t *testing.T) {
 	})
 
 	t.Run("User not found", func(t *testing.T) {
-		user, err := GetUserByEmailAndPassword("nonexistent@fake.com", password)
+		user, err := db.GetUserByEmailAndPassword("nonexistent@fake.com", password)
 
 		if err == nil {
 			t.Error("Expected error for missing user, got nothing")
@@ -184,7 +179,7 @@ func TestGetUserByEmailAndPassword(t *testing.T) {
 	})
 
 	t.Run("User exists, password is incorrect", func(t *testing.T) {
-		user, err := GetUserByEmailAndPassword(email, "wrongpassword")
+		user, err := db.GetUserByEmailAndPassword(email, "wrongpassword")
 
 		if err == nil {
 			t.Error("Expected an erorr for wrong password, got nothing")

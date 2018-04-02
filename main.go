@@ -1,27 +1,27 @@
 package main
 
 import (
-	//	"encoding/json"
 	"fmt"
-	// "github.com/julienschmidt/httprouter"
+	"net/http"
 	//	"github.com/russross/blackfriday"
 	//	"io/ioutil"
-	"database/sql"
-	"net/http"
 
+	"github.com/alexandersmanning/simcha/app/config"
+	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/alexandersmanning/simcha/app/routes"
-	"github.com/alexandersmanning/simcha/app/shared/database"
-	_ "github.com/lib/pq"
 )
 
 func main() {
-	r := routes.Router()
-	db, err := sql.Open("postgres", "dbname=simcha_dev sslmode=disable")
-	database.InitStore(db)
+	db, err := models.InitDB("dbname=simcha_dev sslmode=disable")
+
+	defer db.Close()
 
 	if err != nil {
 		panic(err)
 	}
+
+	env := &config.Env{DB: db}
+	r := routes.Router(env)
 	//r := httprouter.New()
 	//r.GET("/", HomeHandler)
 
