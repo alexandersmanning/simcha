@@ -56,6 +56,9 @@ func PostCreate(env *config.Env) httprouter.Handle {
 			return
 		}
 
-		fmt.Fprintf(w, "success", http.StatusAccepted)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		fmt.Fprint(w, `{"result": "success"}`)
 	}
 }

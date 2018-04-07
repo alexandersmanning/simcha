@@ -1,26 +1,19 @@
 package controllers
 
 import (
+	"bytes"
+	"encoding/json"
 	"github.com/golang/mock/gomock"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/alexandersmanning/simcha/app/config"
 	"github.com/alexandersmanning/simcha/app/mocks"
 	"github.com/alexandersmanning/simcha/app/models"
 )
-
-//func (mdb *mockDB) AllPosts() ([]*models.Post, error) {
-//	posts := []*models.Post{}
-//	posts = append(posts, &models.Post{Body: "Body Post 1", Title: "Title Post 1"})
-//	posts = append(posts, &models.Post{Body: "Body Post 2", Title: "Title Post 2"})
-//	return posts, nil
-//}
-//
-//func (mdb *mockDB) CreatePost(p models.Post) error {
-//	return nil
-//}
 
 func TestPostIndex(t *testing.T) {
 	rec := httptest.NewRecorder()
@@ -40,15 +33,62 @@ func TestPostIndex(t *testing.T) {
 
 	PostIndex(&env)(rec, req, nil)
 
-	if rec.Code != 200 {
-		t.Errorf("Expected a status of 200, got %d", rec.Code)
+	checkStatus(rec.Code, 200, t)
+
+	checkHeader(rec.HeaderMap, "Content-Type", "application/json", t)
+
+	returnedPosts := []*models.Post{}
+
+	msg, err := ioutil.ReadAll(rec.Body)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	if val, ok := rec.HeaderMap["Content-Type"]; !ok {
-		t.Error("Expected a content type header, got nothing")
-	} else if len(val) > 1 || val[0] != "application/json" {
-		t.Errorf("Expected content type of %s, got %s", "application/json", val)
+	if err := json.Unmarshal(msg, &returnedPosts); err != nil {
+		t.Fatal(err)
 	}
 
-	t.Error(rec.Body.String())
+	/*
+		this works because of deep equal, however these are two separate pieces of memory
+		and therefore would fail any `==` tests
+	*/
+	if !reflect.DeepEqual(returnedPosts, posts) {
+		t.Errorf("Expected %v to equal %v", returnedPosts, posts)
+	}
+}
+
+func TestPostCreate(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockDatastore := mocks.NewMockDatastore(mockCtrl)
+	env := config.Env{DB: mockDatastore}
+
+	post := models.Post{Body: "Test Create Body", Title: "Test Create Title"}
+	postJSON, err := json.Marshal(post)
+	postBuff := bytes.NewBuffer(postJSON)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rec := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/posts", postBuff)
+
+	mockDatastore.EXPECT().CreatePost(post).Return(nil)
+
+	PostCreate(&env)(rec, req, nil)
+
+	checkStatus(rec.Code, 200, t)
+
+	checkHeader(rec.HeaderMap, "Content-Type", "application/json", t)
+
+	msg, err := ioutil.ReadAll(rec.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(msg) != `{"result": "success"}` {
+		t.Errorf("Expected a successful result, got %q", string(msg))
+	}
 }
