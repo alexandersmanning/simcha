@@ -12,36 +12,7 @@ import (
 	"github.com/alexandersmanning/simcha/app/sessions"
 )
 
-func PostIndex(env *config.Env) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		if loggedIn, err := sessions.IsLoggedIn(env, r); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		} else if !loggedIn {
-			http.Error(w, "You must be logged in", http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		posts, err := env.DB.AllPosts()
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		enc := json.NewEncoder(w)
-
-		err = enc.Encode(posts)
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-}
-
-func PostCreate(env *config.Env) httprouter.Handle {
+func Login(env *config.Env) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		msg, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
@@ -51,23 +22,42 @@ func PostCreate(env *config.Env) httprouter.Handle {
 			return
 		}
 
-		var post models.Post
-		err = json.Unmarshal(msg, &post)
+		var user models.User
+		if err := json.Unmarshal(msg, &user); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
+		user, err = env.DB.GetUserByEmailAndPassword(user.Email, user.Password)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		err = env.DB.CreatePost(post)
-		if err != nil {
+		if err := sessions.Login(&user, env, w, r); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"result": "success"}`)
+	}
+}
 
+func Logout(env *config.Env) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		session, err := env.Store.Get(r, "session")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		session.Values["loggedIn"] = false
+		session.Save(r, w)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"result": "success"}`)
 	}
 }

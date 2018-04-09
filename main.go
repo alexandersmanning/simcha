@@ -3,16 +3,22 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 	//	"github.com/russross/blackfriday"
 	//	"io/ioutil"
-
 	"github.com/alexandersmanning/simcha/app/config"
 	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/alexandersmanning/simcha/app/routes"
+	"github.com/gorilla/sessions"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	db, err := models.InitDB("dbname=simcha_dev sslmode=disable")
+	if err := godotenv.Load(); err != nil {
+		panic(err)
+	}
+
+	db, err := models.InitDB(os.Getenv("DB_CONNECTION"))
 
 	defer db.Close()
 
@@ -20,7 +26,9 @@ func main() {
 		panic(err)
 	}
 
-	env := &config.Env{DB: db}
+	store := sessions.NewCookieStore([]byte(os.Getenv("APPLICATION_SECRET")))
+
+	env := &config.Env{DB: db, Store: store}
 	r := routes.Router(env)
 	//r := httprouter.New()
 	//r.GET("/", HomeHandler)
@@ -39,8 +47,9 @@ func main() {
 	//r.POST("/markdown", GenerateMarkdown)
 	////http.HandleFunc("/markdown", GenerateMarkdown)
 	////http.Handle("/", http.FileServer(http.Dir("public")))
-	fmt.Println("Listening on ", 8080)
-	if error := http.ListenAndServe(":8080", r); error != nil {
+	port := os.Getenv("PORT")
+	fmt.Println("Listening on ", port)
+	if error := http.ListenAndServe(":"+port, r); error != nil {
 		panic(error)
 	}
 }
