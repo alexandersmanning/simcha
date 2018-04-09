@@ -3,7 +3,6 @@ package models
 import (
 	"time"
 
-	//"github.com/gorilla/sessions"
 	"github.com/alexandersmanning/webapputil"
 	"golang.org/x/crypto/bcrypt"
 )

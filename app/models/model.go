@@ -6,6 +6,7 @@ package models
 
 import (
 	"database/sql"
+	"encoding/gob"
 	"fmt"
 	_ "github.com/lib/pq" //PQ is used for postgres db
 )
@@ -20,6 +21,8 @@ type Datastore interface {
 type DB struct {
 	*sql.DB
 }
+
+//type M map[string]interface{}
 
 //InitDB initializes the database, creating a new DB struct
 func InitDB(dataSourceName string) (*DB, error) {
@@ -39,4 +42,9 @@ type modelError struct {
 
 func (m *modelError) Error() string {
 	return fmt.Sprintf("%s %s", m.fieldName, m.errorText)
+}
+
+func init() {
+	gob.Register(&User{})
+	//	gob.Register(&M{})
 }
