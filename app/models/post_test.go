@@ -45,9 +45,8 @@ func TestPostCreation(t *testing.T) {
 
 	t.Run("One post", func(t *testing.T) {
 		p := Post{
-			Author: "Test Username",
-			Body:   "Test Body",
-			Title:  "Test Title",
+			Body:  "Test Body",
+			Title: "Test Title",
 		}
 
 		err := db.CreatePost(p)

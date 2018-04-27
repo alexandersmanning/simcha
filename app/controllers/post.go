@@ -9,18 +9,18 @@ import (
 
 	"github.com/alexandersmanning/simcha/app/config"
 	"github.com/alexandersmanning/simcha/app/models"
-	"github.com/alexandersmanning/simcha/app/sessions"
+	//"github.com/alexandersmanning/simcha/app/sessions"
 )
 
 func PostIndex(env *config.Env) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		if loggedIn, err := sessions.IsLoggedIn(env, r); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		} else if !loggedIn {
-			http.Error(w, "You must be logged in", http.StatusInternalServerError)
-			return
-		}
+		//if loggedIn, err := sessions.IsLoggedIn(env, r); err != nil {
+		//	http.Error(w, err.Error(), http.StatusInternalServerError)
+		//	return
+		//} else if !loggedIn {
+		//	http.Error(w, "You must be logged in", http.StatusInternalServerError)
+		//	return
+		//}
 
 		w.Header().Set("Content-Type", "application/json")
 		posts, err := env.DB.AllPosts()

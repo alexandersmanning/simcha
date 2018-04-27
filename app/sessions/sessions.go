@@ -38,6 +38,8 @@ func IsLoggedIn(env *config.Env, r *http.Request) (bool, error) {
 }
 
 func CurrentUser(env *config.Env, r *http.Request) (*models.User, error) {
+	// This does not work given scope values
+
 	session, err := env.Store.Get(r, "session")
 	u := &models.User{}
 

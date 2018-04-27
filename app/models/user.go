@@ -54,7 +54,16 @@ func (db *DB) GetUserByEmailAndPassword(email, password string) (User, error) {
 	return u, nil
 }
 
-func (u *User) createPassword() error {
+func (db *DB) UpdatePassword(u *User, previousPassword, password, confirmationPassword string) error {
+	//Verify password for the new user
+	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordDigest), []byte(previousPassword)); err != nil {
+		return &modelError{"Previous Password", "Does not match current password"}
+	}
+
+	return nil
+}
+
+func (u *User) setPassword() error {
 	err := verifyPassword(u.Password, u.ConfirmationPassword)
 	if err != nil {
 		return err
@@ -67,6 +76,19 @@ func (u *User) createPassword() error {
 
 	u.PasswordDigest = string(passwordByte)
 	return nil
+}
+
+func createPassword(password, confirmation string) (string, error) {
+	if err := verifyPassword(password, confirmation); err != nil {
+		return "", err
+	}
+
+	passwordByte, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", &modelError{"Password", err.Error()}
+	}
+
+	return string(passwordByte), nil
 }
 
 func verifyPassword(password, confirmation string) error {
@@ -113,7 +135,7 @@ func (db *DB) CreateUser(u *User) error {
 	}
 
 	// set password
-	if err := u.createPassword(); err != nil {
+	if err := u.setPassword(); err != nil {
 		return err
 	}
 

@@ -2,7 +2,7 @@ package models
 
 //Post is a struct for creating a simple blog post
 type Post struct {
-	Author string `json:"Author"`
+	Author User   `json:"author"`
 	Body   string `json:"body"`
 	Title  string `json:"title"`
 }
@@ -23,7 +23,8 @@ func (db *DB) AllPosts() ([]*Post, error) {
 
 	defer rows.Close()
 
-	posts := []*Post{}
+	var posts []*Post
+	//posts := []*Post{}
 	for rows.Next() {
 		post := Post{}
 		if err := rows.Scan(&post.Body, &post.Title); err != nil {
