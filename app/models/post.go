@@ -24,7 +24,7 @@ func (db *DB) AllPosts() ([]*Post, error) {
 	defer rows.Close()
 
 	var posts []*Post
-	//posts := []*Post{}
+
 	for rows.Next() {
 		post := Post{}
 		if err := rows.Scan(&post.Body, &post.Title); err != nil {

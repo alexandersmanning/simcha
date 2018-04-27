@@ -18,24 +18,24 @@ func Login(env *config.Env) httprouter.Handle {
 		defer r.Body.Close()
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			jsonError(w,err, http.StatusInternalServerError)
 			return
 		}
 
 		var user models.User
 		if err := json.Unmarshal(msg, &user); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}
 
 		user, err = env.DB.GetUserByEmailAndPassword(user.Email, user.Password)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}
 
 		if err := sessions.Login(&user, env, w, r); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}
 
@@ -49,7 +49,7 @@ func Logout(env *config.Env) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		session, err := env.Store.Get(r, "session")
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}
 
