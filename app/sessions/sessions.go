@@ -51,9 +51,9 @@ func CurrentUser(env *config.Env, r *http.Request) (*models.User, error) {
 		val := session.Values["user"]
 		if u, ok := val.(*models.User); !ok {
 			return u, errors.New("Session not stored properly")
+		} else {
+			return u, nil
 		}
-
-		return u, nil
 	}
 
 	return u, nil

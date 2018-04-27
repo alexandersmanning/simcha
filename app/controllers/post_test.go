@@ -25,7 +25,7 @@ func TestPostIndex(t *testing.T) {
 	mockDatastore := mocks.NewMockDatastore(mockCtrl)
 	env := config.Env{DB: mockDatastore}
 
-	posts := []*models.Post{}
+	var posts []*models.Post
 	posts = append(posts, &models.Post{Body: "Body Post 1", Title: "Title Post 1"})
 	posts = append(posts, &models.Post{Body: "Body Post 2", Title: "Title Post 2"})
 

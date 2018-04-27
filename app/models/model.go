@@ -46,5 +46,4 @@ func (m *modelError) Error() string {
 
 func init() {
 	gob.Register(&User{})
-	//	gob.Register(&M{})
 }
