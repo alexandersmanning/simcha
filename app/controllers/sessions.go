@@ -9,7 +9,6 @@ import (
 
 	"github.com/alexandersmanning/simcha/app/config"
 	"github.com/alexandersmanning/simcha/app/models"
-	"github.com/alexandersmanning/simcha/app/sessions"
 )
 
 func Login(env *config.Env) httprouter.Handle {
@@ -34,7 +33,7 @@ func Login(env *config.Env) httprouter.Handle {
 			return
 		}
 
-		if err := sessions.Login(&user, env, w, r); err != nil {
+		if err := env.Store.Login(&user, w, r); err != nil {
 			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -47,14 +46,9 @@ func Login(env *config.Env) httprouter.Handle {
 
 func Logout(env *config.Env) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		session, err := env.Store.Get(r, "session")
-		if err != nil {
+		if err := env.Store.Logout(w, r); err != nil {
 			jsonError(w, err, http.StatusInternalServerError)
-			return
 		}
-
-		session.Values["loggedIn"] = false
-		session.Save(r, w)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
