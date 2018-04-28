@@ -4,20 +4,28 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/alexandersmanning/simcha/app/config"
 	"github.com/alexandersmanning/simcha/app/models"
+	"github.com/gorilla/sessions"
 )
 
-//type SessionStore interface {
-//	CurrentUser(r *http.Request) (*models.User, error)
-//}
-//
-//type Session struct {
-//	*sessions.CookieStore
-//}
+type SessionStore interface {
+	CurrentUser(r *http.Request) (*models.User, error)
+	Login(u *models.User, w http.ResponseWriter, r *http.Request) error
+	IsLoggedIn(r *http.Request) (bool, error)
+	Logout(w http.ResponseWriter, r *http.Request) error
+}
 
-func Login(u *models.User, env *config.Env, w http.ResponseWriter, r *http.Request) error {
-	session, err := env.Store.Get(r, "session")
+type Session struct {
+	*sessions.CookieStore
+}
+
+func InitStore(secret string) *Session {
+	cookieStore := sessions.NewCookieStore([]byte(secret))
+	return &Session{ cookieStore }
+}
+
+func (s *Session) Login(u *models.User, w http.ResponseWriter, r *http.Request) error {
+	session, err := s.Get(r, "session")
 	if err != nil {
 		return err
 	}
@@ -31,8 +39,22 @@ func Login(u *models.User, env *config.Env, w http.ResponseWriter, r *http.Reque
 	return nil
 }
 
-func IsLoggedIn(env *config.Env, r *http.Request) (bool, error) {
-	session, err := env.Store.Get(r, "session")
+func (s *Session) Logout(w http.ResponseWriter, r *http.Request) error {
+	session, err := s.Get(r, "session")
+	if err != nil {
+		return err
+	}
+
+	session.Values["loggedIn"] = false
+	if err := session.Save(r, w); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Session) IsLoggedIn(r *http.Request) (bool, error) {
+	session, err := s.Get(r, "session")
 
 	if err != nil {
 		return false, err
@@ -45,10 +67,10 @@ func IsLoggedIn(env *config.Env, r *http.Request) (bool, error) {
 	return false, nil
 }
 
-func CurrentUser(env *config.Env, r *http.Request) (*models.User, error) {
+func (s *Session) CurrentUser(r *http.Request) (*models.User, error) {
 	// This does not work given scope values
 
-	session, err := env.Store.Get(r, "session")
+	session, err := s.Get(r, "session")
 	u := &models.User{}
 
 	if err != nil {
@@ -58,7 +80,7 @@ func CurrentUser(env *config.Env, r *http.Request) (*models.User, error) {
 	if _, ok := session.Values["loggedIn"]; ok {
 		val := session.Values["user"]
 		if u, ok := val.(*models.User); !ok {
-			return u, errors.New("Session not stored properly")
+			return u, errors.New("session not stored properly")
 		} else {
 			return u, nil
 		}

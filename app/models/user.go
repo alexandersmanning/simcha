@@ -11,12 +11,12 @@ import (
 type User struct {
 	ID                   int    `json:"id"`
 	Email                string `json:"email"`
-	Password             string `json:"password"`
-	ConfirmationPassword string `json:"confirmationPassword"`
-	PasswordDigest       string
-	SessionToken         string
-	CreatedAt            time.Time `json:"createdAt"`
-	ModifiedAt           time.Time `json:"modifiedAt"`
+	Password             string `json:"-"`
+	ConfirmationPassword string `json:"-"`
+	PasswordDigest       string	`json:"-"`
+	SessionToken         string `json:"-"`
+	CreatedAt            time.Time `json:"createdAt,omitempty"`
+	ModifiedAt           time.Time `json:"modifiedAt,omitempty"`
 }
 
 //UserStore is the interface for all User functions that interact with the database

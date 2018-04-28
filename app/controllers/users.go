@@ -9,7 +9,6 @@ import (
 
 	"github.com/alexandersmanning/simcha/app/config"
 	"github.com/alexandersmanning/simcha/app/models"
-	"github.com/alexandersmanning/simcha/app/sessions"
 )
 
 func UserCreate(env *config.Env) httprouter.Handle {
@@ -33,7 +32,7 @@ func UserCreate(env *config.Env) httprouter.Handle {
 			return
 		}
 
-		if err := sessions.Login(&u, env, w, r); err != nil {
+		if err := env.Store.Login(&u, w, r); err != nil {
 			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}
