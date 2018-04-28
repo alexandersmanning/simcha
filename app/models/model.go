@@ -22,8 +22,6 @@ type DB struct {
 	*sql.DB
 }
 
-//type M map[string]interface{}
-
 //InitDB initializes the database, creating a new DB struct
 func InitDB(dataSourceName string) (*DB, error) {
 	db, err := sql.Open("postgres", dataSourceName)

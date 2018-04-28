@@ -15,7 +15,11 @@ type PostStore interface {
 
 //AllPosts queries the posts table and returns a slice of Post objects, or and error
 func (db *DB) AllPosts() ([]*Post, error) {
-	rows, err := db.Query("SELECT body, title FROM posts")
+	rows, err := db.Query(`
+		SELECT COALESCE(users.id, '0'), COALESCE(users.email, 'REMOVED'), posts.body, posts.title
+		FROM posts
+		LEFT JOIN users on users.id = posts.user_id
+	`)
 
 	if err != nil {
 		return nil, err
@@ -27,7 +31,7 @@ func (db *DB) AllPosts() ([]*Post, error) {
 
 	for rows.Next() {
 		post := Post{}
-		if err := rows.Scan(&post.Body, &post.Title); err != nil {
+		if err := rows.Scan(&post.Author.ID, &post.Author.Email, &post.Body, &post.Title); err != nil {
 			return nil, err
 		}
 		posts = append(posts, &post)
@@ -39,8 +43,8 @@ func (db *DB) AllPosts() ([]*Post, error) {
 //CreatePost creates a new Post object, and returns an ID of the created object
 func (db *DB) CreatePost(p Post) error {
 	_, err := db.Query(
-		"INSERT INTO posts(title, body) VALUES($1, $2) RETURNING id",
-		p.Title, p.Body)
+		"INSERT INTO posts(user_id, title, body) VALUES($1, $2, $3) RETURNING id",
+		p.Author.ID, p.Title, p.Body)
 
 	return err
 }

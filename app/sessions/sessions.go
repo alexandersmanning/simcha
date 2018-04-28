@@ -8,6 +8,14 @@ import (
 	"github.com/alexandersmanning/simcha/app/models"
 )
 
+//type SessionStore interface {
+//	CurrentUser(r *http.Request) (*models.User, error)
+//}
+//
+//type Session struct {
+//	*sessions.CookieStore
+//}
+
 func Login(u *models.User, env *config.Env, w http.ResponseWriter, r *http.Request) error {
 	session, err := env.Store.Get(r, "session")
 	if err != nil {
