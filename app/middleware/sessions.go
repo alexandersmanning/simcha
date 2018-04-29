@@ -10,7 +10,7 @@ type Middleware func(next httprouter.Handle) httprouter.Handle
 
 func LoggedIn(env *config.Env, next httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
-		if loggedIn, err := env.Store.IsLoggedIn(r); err != nil {
+		if loggedIn, err := env.IsLoggedIn(r); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		} else if !loggedIn {

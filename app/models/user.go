@@ -11,8 +11,8 @@ import (
 type User struct {
 	ID                   int    `json:"id"`
 	Email                string `json:"email"`
-	Password             string `json:"-"`
-	ConfirmationPassword string `json:"-"`
+	Password             string `json:"password"`
+	ConfirmationPassword string `json:"confirmationPassword"`
 	PasswordDigest       string	`json:"-"`
 	SessionToken         string `json:"-"`
 	CreatedAt            time.Time `json:"createdAt,omitempty"`
@@ -22,15 +22,18 @@ type User struct {
 //UserStore is the interface for all User functions that interact with the database
 type UserStore interface {
 	GetUserByEmailAndPassword(email, password string) (User, error)
+	GetUserBySessionToken(id int, token string) (User, error)
 	UserExists(email string) (bool, error)
 	CreateUser(u *User) error
+	UpdateSessionToken(id int) error
 }
 
 //GetUserByEmailAndPassword checks if the user is in the database, and if it is verifies if the password matches
 func (db *DB) GetUserByEmailAndPassword(email, password string) (User, error) {
 	u := User{}
 	rows, err := db.Query(
-		`SELECT id, email, password_digest FROM users WHERE email = $1`, email,
+		`SELECT id, email, password_digest, session_token FROM users WHERE email = $1`,
+		email,
 	)
 
 	if err != nil {
@@ -40,7 +43,7 @@ func (db *DB) GetUserByEmailAndPassword(email, password string) (User, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		if err := rows.Scan(&u.ID, &u.Email, &u.PasswordDigest); err != nil {
+		if err := rows.Scan(&u.ID, &u.Email, &u.PasswordDigest, &u.SessionToken); err != nil {
 			return User{}, err
 		}
 	}
@@ -49,6 +52,28 @@ func (db *DB) GetUserByEmailAndPassword(email, password string) (User, error) {
 
 	if u.Email == "" || err != nil {
 		return User{}, &modelError{"Email or Password", "was not found, or does not match our records"}
+	}
+
+	return u, nil
+}
+
+func (db *DB) GetUserBySessionToken(id int, token string) (User, error) {
+	u := User{}
+	rows, err := db.Query(
+		`SELECT ID, Email FROM users WHERE id = $1 AND session_token = $2`,
+		id, token)
+
+	defer rows.Close()
+
+	if err != nil {
+		return u, err
+	}
+
+	for rows.Next() {
+		err := rows.Scan(&u.ID, &u.Email)
+		if err != nil {
+			return u, err
+		}
 	}
 
 	return u, nil
@@ -173,6 +198,23 @@ func (u *User) ensureSessionToken() error {
 		return err
 	} else if u.SessionToken == "" {
 		u.SessionToken = token
+	}
+
+	return nil
+}
+
+func (db *DB) UpdateSessionToken(id int) error {
+	token, err := CreateSessionToken()
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Query(
+		`UPDATE users SET session_token = $1 WHERE id = $2`,
+	token, id)
+
+	if err != nil {
+		return err
 	}
 
 	return nil
