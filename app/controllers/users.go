@@ -32,7 +32,7 @@ func UserCreate(env *config.Env) httprouter.Handle {
 			return
 		}
 
-		if err := env.Store.Login(&u, w, r); err != nil {
+		if err := env.Login(&u, w, r); err != nil {
 			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}

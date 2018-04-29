@@ -83,6 +83,31 @@ func (mr *MockDatastoreMockRecorder) GetUserByEmailAndPassword(arg0, arg1 interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByEmailAndPassword", reflect.TypeOf((*MockDatastore)(nil).GetUserByEmailAndPassword), arg0, arg1)
 }
 
+// GetUserBySessionToken mocks base method
+func (m *MockDatastore) GetUserBySessionToken(arg0 int, arg1 string) (models.User, error) {
+	ret := m.ctrl.Call(m, "GetUserBySessionToken", arg0, arg1)
+	ret0, _ := ret[0].(models.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserBySessionToken indicates an expected call of GetUserBySessionToken
+func (mr *MockDatastoreMockRecorder) GetUserBySessionToken(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserBySessionToken", reflect.TypeOf((*MockDatastore)(nil).GetUserBySessionToken), arg0, arg1)
+}
+
+// UpdateSessionToken mocks base method
+func (m *MockDatastore) UpdateSessionToken(arg0 int) error {
+	ret := m.ctrl.Call(m, "UpdateSessionToken", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSessionToken indicates an expected call of UpdateSessionToken
+func (mr *MockDatastoreMockRecorder) UpdateSessionToken(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSessionToken", reflect.TypeOf((*MockDatastore)(nil).UpdateSessionToken), arg0)
+}
+
 // UserExists mocks base method
 func (m *MockDatastore) UserExists(arg0 string) (bool, error) {
 	ret := m.ctrl.Call(m, "UserExists", arg0)

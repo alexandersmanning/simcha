@@ -33,7 +33,7 @@ func Login(env *config.Env) httprouter.Handle {
 			return
 		}
 
-		if err := env.Store.Login(&user, w, r); err != nil {
+		if err := env.Login(&user, w, r); err != nil {
 			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -46,7 +46,7 @@ func Login(env *config.Env) httprouter.Handle {
 
 func Logout(env *config.Env) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		if err := env.Store.Logout(w, r); err != nil {
+		if err := env.Logout(w, r); err != nil {
 			jsonError(w, err, http.StatusInternalServerError)
 		}
 
