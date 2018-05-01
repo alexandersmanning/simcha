@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/joho/godotenv"
+	"github.com/julienschmidt/httprouter"
 	"github.com/alexandersmanning/simcha/app/config"
 	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/alexandersmanning/simcha/app/routes"
-	"github.com/joho/godotenv"
-	"github.com/julienschmidt/httprouter"
+	"github.com/alexandersmanning/simcha/app/sessions"
 )
 
 func main() {
@@ -25,7 +26,7 @@ func main() {
 		panic(err)
 	}
 
-	store := config.InitStore(os.Getenv("APPLICATION_SECRET")) //.NewCookieStore([]byte(os.Getenv("APPLICATION_SECRET")))
+	store := sessions.InitStore(os.Getenv("APPLICATION_SECRET")) //.NewCookieStore([]byte(os.Getenv("APPLICATION_SECRET")))
 
 	env := &config.Env{DB: db, Store: store}
 	r := routes.Router(env)
