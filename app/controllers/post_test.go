@@ -1,7 +1,6 @@
 package controllers
 
-import (
-	"bytes"
+import ( "bytes"
 	"encoding/json"
 	"github.com/golang/mock/gomock"
 	"io/ioutil"
