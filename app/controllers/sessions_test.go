@@ -8,18 +8,105 @@ import (
 	"github.com/alexandersmanning/simcha/app/mocks"
 	"github.com/alexandersmanning/simcha/app/config"
 	"github.com/alexandersmanning/simcha/app/models"
+	"encoding/json"
+	"bytes"
+	"io/ioutil"
+	"errors"
 )
 
 func TestLogin(t *testing.T) {
-	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/login", nil)
-
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	mockSessionStore := mocks.NewMockSessionStore(mockCtrl)
 	mockDataStore := mocks.NewMockDatastore(mockCtrl)
 	env := config.Env{mockDataStore, mockSessionStore}
+	u := models.User{Email: "fake@email.com", Password: "thisisatestpassword"}
 
-	u := models.User{}
+	t.Run("Matching credentials", func(t *testing.T) {
+		jsonUser, err := json.Marshal(u)
+		if err != nil {
+			t.Fatal(err)
+		}
+		userBuff := bytes.NewBuffer(jsonUser)
+
+		rec := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/login", userBuff)
+		mockDataStore.EXPECT().GetUserByEmailAndPassword(u.Email, u.Password).Return(u, nil)
+		mockSessionStore.EXPECT().Login(&u, rec, req).Return(nil)
+
+		Login(&env)(rec, req, nil)
+
+		checkStatus(rec.Code, 200, t)
+		checkHeader(rec.HeaderMap, "Content-Type", "application/json", t)
+
+		msg, err := ioutil.ReadAll(rec.Body)
+		if err != nil {
+			t.Fatal(t)
+		}
+
+		if string(msg) != `{"result": "success"}` {
+			t.Errorf("Expected successful result, got %q", string(msg))
+		}
+	})
+
+	t.Run("No user found", func(t *testing.T) {
+		jsonUser, err := json.Marshal(u)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		userBuff := bytes.NewBuffer(jsonUser)
+
+		rec := httptest.NewRecorder();
+		req, _ := http.NewRequest("POST", "/login", userBuff)
+
+		mockDataStore.EXPECT().GetUserByEmailAndPassword(u.Email, u.Password).Return(models.User{}, errors.New("no user found"))
+
+		Login(&env)(rec, req, nil)
+
+		checkStatus(rec.Code, 500, t)
+		checkHeader(rec.HeaderMap, "Content-Type", "application/json", t)
+
+		msg, err := ioutil.ReadAll(rec.Body)
+
+		if err != nil {
+			t.Fatal(t)
+		}
+
+		if string(msg) != `{"result":"", "error": "no user found"}` {
+			t.Errorf("Expected an error, received %q instead", string(msg))
+		}
+	})
+}
+
+func TestLogout(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockDataStore := mocks.NewMockDatastore(mockCtrl)
+	mockSessionStore := mocks.NewMockSessionStore(mockCtrl)
+
+	env := config.Env{mockDataStore, mockSessionStore}
+
+	t.Run("Working Session Logout", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/logout", nil)
+		rec := httptest.NewRecorder()
+
+		mockSessionStore.EXPECT().Logout(env.DB, rec, req).Return(nil)
+		Logout(&env)(rec, req, nil)
+
+		checkStatus(rec.Code, 200, t)
+		checkHeader(rec.HeaderMap, "Content-Type", "application/json", t)
+
+		msg, err := ioutil.ReadAll(rec.Body)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if string(msg) != `{"result": "success"}` {
+			t.Errorf("Expected positive result, receive %q", string(msg))
+		}
+	})
 }
