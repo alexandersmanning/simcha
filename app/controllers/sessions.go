@@ -48,6 +48,7 @@ func Logout(env *config.Env) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		if err := env.Store.Logout(env.DB, w, r); err != nil {
 			jsonError(w, err, http.StatusInternalServerError)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
