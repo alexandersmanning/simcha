@@ -46,7 +46,7 @@ func TestLogin(t *testing.T) {
 		}
 
 		if string(msg) != `{"result": "success"}` {
-			t.Errorf("Expected successful result, got %q", string(msg))
+			t.Errorf("Expected successful result, got %s", string(msg))
 		}
 	})
 
@@ -75,7 +75,7 @@ func TestLogin(t *testing.T) {
 		}
 
 		if string(msg) != `{"result":"", "error": "no user found"}` {
-			t.Errorf("Expected an error, received %q instead", string(msg))
+			t.Errorf("Expected an error, received %s instead", string(msg))
 		}
 	})
 }
@@ -87,14 +87,14 @@ func TestLogout(t *testing.T) {
 	mockDataStore := mocks.NewMockDatastore(mockCtrl)
 	mockSessionStore := mocks.NewMockSessionStore(mockCtrl)
 
-	env := config.Env{mockDataStore, mockSessionStore}
+	env := &config.Env{mockDataStore, mockSessionStore}
 
 	t.Run("Working Session Logout", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/logout", nil)
 		rec := httptest.NewRecorder()
 
 		mockSessionStore.EXPECT().Logout(env.DB, rec, req).Return(nil)
-		Logout(&env)(rec, req, nil)
+		Logout(env)(rec, req, nil)
 
 		checkStatus(rec.Code, 200, t)
 		checkHeader(rec.HeaderMap, "Content-Type", "application/json", t)
@@ -106,7 +106,29 @@ func TestLogout(t *testing.T) {
 		}
 
 		if string(msg) != `{"result": "success"}` {
-			t.Errorf("Expected positive result, receive %q", string(msg))
+			t.Errorf("Expected positive result, receive %s", string(msg))
+		}
+	})
+
+	t.Run("Failed Session Logout", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/logout", nil)
+		rec := httptest.NewRecorder()
+
+		mockSessionStore.EXPECT().Logout(env.DB, rec, req).Return(errors.New("session failed"))
+
+		Logout(env)(rec, req, nil)
+
+		checkStatus(rec.Code, 500, t)
+		checkHeader(rec.HeaderMap, "Content-Type", "application/json", t)
+
+		msg, err := ioutil.ReadAll(rec.Body)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if string(msg) != `{"result":"", "error": "session failed"}` {
+			t.Errorf("expected error result, got %s", string(msg))
 		}
 	})
 }
