@@ -46,7 +46,15 @@ func Login(env *config.Env) httprouter.Handle {
 
 func Logout(env *config.Env) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		if err := env.Store.Logout(env.DB, w, r); err != nil {
+		//Get Current user
+
+		u, err := env.Store.CurrentUser(env.DB, r)
+		if err != nil {
+			jsonError(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		if err := env.Store.Logout(u, env.DB, w, r); err != nil {
 			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}
