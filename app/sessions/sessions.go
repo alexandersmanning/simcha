@@ -10,7 +10,7 @@ type SessionStore interface {
 	CurrentUser(db models.Datastore, r *http.Request) (*models.User, error)
 	Login(u *models.User, w http.ResponseWriter, r *http.Request) error
 	IsLoggedIn(db models.Datastore, r *http.Request) (bool, error)
-	Logout(db models.Datastore, w http.ResponseWriter, r *http.Request) error
+	Logout(u *models.User, db models.Datastore, w http.ResponseWriter, r *http.Request) error
 }
 
 type Session struct {
@@ -39,26 +39,21 @@ func (s *Session) Login(u *models.User, w http.ResponseWriter, r *http.Request) 
 	return nil
 }
 
-func (s *Session) Logout(db models.Datastore, w http.ResponseWriter, r *http.Request) error {
+func (s *Session) Logout(u *models.User, db models.Datastore, w http.ResponseWriter, r *http.Request) error {
 	session, err := s.Get(r, "session")
 	if err != nil {
 		return err
-	}
-
-	//get current user and then update
-	u, err := s.CurrentUser(db, r)
-	if err != nil {
-		return err
-	}
-
-	if u.ID == 0 {
-		return nil
 	}
 
 	session.Values["token"] = nil
 	session.Values["id"] = nil
 	if err := session.Save(r, w); err != nil {
 		return err
+	}
+
+	// User does not exists, just return nil
+	if u.ID == 0 {
+		return nil
 	}
 
 	return db.UpdateSessionToken(u.ID)

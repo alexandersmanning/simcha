@@ -87,13 +87,14 @@ func TestLogout(t *testing.T) {
 	mockDataStore := mocks.NewMockDatastore(mockCtrl)
 	mockSessionStore := mocks.NewMockSessionStore(mockCtrl)
 
-	env := &config.Env{mockDataStore, mockSessionStore}
+	env := &config.Env{DB: mockDataStore, Store: mockSessionStore}
 
 	t.Run("Working Session Logout", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/logout", nil)
 		rec := httptest.NewRecorder()
 
-		mockSessionStore.EXPECT().Logout(env.DB, rec, req).Return(nil)
+		mockSessionStore.EXPECT().CurrentUser(env.DB, req).Return(&models.User{}, nil)
+		mockSessionStore.EXPECT().Logout(&models.User{}, env.DB, rec, req).Return(nil)
 		Logout(env)(rec, req, nil)
 
 		checkStatus(rec.Code, 200, t)
@@ -114,7 +115,8 @@ func TestLogout(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/logout", nil)
 		rec := httptest.NewRecorder()
 
-		mockSessionStore.EXPECT().Logout(env.DB, rec, req).Return(errors.New("session failed"))
+		mockSessionStore.EXPECT().CurrentUser(env.DB, req).Return(&models.User{}, nil)
+		mockSessionStore.EXPECT().Logout(&models.User{}, env.DB, rec, req).Return(errors.New("session failed"))
 
 		Logout(env)(rec, req, nil)
 
