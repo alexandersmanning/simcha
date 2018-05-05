@@ -26,7 +26,7 @@ func main() {
 		panic(err)
 	}
 
-	store := sessions.InitStore(os.Getenv("APPLICATION_SECRET")) //.NewCookieStore([]byte(os.Getenv("APPLICATION_SECRET")))
+	store := sessions.InitStore(os.Getenv("APPLICATION_SECRET"))
 
 	env := &config.Env{DB: db, Store: store}
 	r := routes.Router(env)
