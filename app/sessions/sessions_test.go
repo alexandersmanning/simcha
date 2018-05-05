@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"github.com/alexandersmanning/simcha/app/models"
+	"github.com/golang/mock/gomock"
+	"github.com/alexandersmanning/simcha/app/mocks"
 )
 
 func TestMain(m *testing.M) {
@@ -21,8 +23,7 @@ func setupSessions() {
 	session = InitStore(os.Getenv("APPLICATION_SECRET"))
 }
 
-func clearSessions(t *testing.T) {
-	req, _ := http.NewRequest("POST", "/logout", nil)
+func clearSessions(t *testing.T, req *http.Request) {
 	sessions, err := session.Get(req, "session")
 
 	if err != nil {
@@ -44,13 +45,38 @@ func setLoginCredentials(t *testing.T, req *http.Request, id int, token string) 
 	sessions.Values["token"] = token
 }
 
+func verifySetLoginCredentials(t *testing.T, req *http.Request, id int, token string) {
+	t.Helper()
+
+	sessions, err := session.Get(req, "session")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	val := sessions.Values["id"]
+
+	if foundId, ok := val.(int); !ok {
+		t.Errorf("Setup failed")
+	} else if foundId != id {
+		t.Errorf("Setup failed, expected %d, got %d", id, foundId)
+	}
+
+	val = sessions.Values["token"]
+	if foundToken, ok := val.(string); !ok {
+		t.Errorf("Setup failed")
+	} else if foundToken != token {
+		t.Errorf("Setup failed expeced %s, got %s", token, foundToken)
+	}
+}
+
 func TestLogin(t *testing.T) {
-	clearSessions(t)
 
 	req, _ := http.NewRequest("POST", "/login", nil)
 	rec := httptest.NewRecorder()
 
 	u := models.User{ID: 100, SessionToken: "fakeToken"}
+
+	clearSessions(t, req)
 
 	if err := session.Login(&u, rec, req); err != nil {
 		t.Fatal(err)
@@ -82,35 +108,60 @@ func TestLogin(t *testing.T) {
 
 func TestLogout(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/logout", nil)
-	//rec := httptest.NewRecorder()
+	rec := httptest.NewRecorder()
 
-	//mockCtrl := gomock.NewController(t)
-	//mockDataStore := mocks.NewMockDatastore(mockCtrl)
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
 
-	t.Run("Logout without without user", func(t *testing.T) {
-		clearSessions(t)
-		setLoginCredentials(t, req,100, "fakeToken")
+	mockDataStore := mocks.NewMockDatastore(mockCtrl)
+
+	t.Run("Logout with logged in user", func(t *testing.T) {
+		u := &models.User{ID: 100, SessionToken: "fakeToken" }
+		clearSessions(t, req)
+		setLoginCredentials(t, req, u.ID, u.SessionToken)
+
+		verifySetLoginCredentials(t, req, u.ID, u.SessionToken)
+
+		mockDataStore.EXPECT().UpdateSessionToken(u.ID).Return(nil).Times(1)
+		session.Logout(u, mockDataStore, rec, req)
 
 		sessions, err := session.Get(req, "session")
+
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		val := sessions.Values["id"]
-
-		if id, ok := val.(int); !ok {
-			t.Errorf("Setup failed")
-		} else if id != 100 {
-			t.Errorf("Setup failed, expected %d, got %d", 100, id)
+		if val := sessions.Values["id"]; val != nil {
+			t.Errorf("Expected ID to be nil after logout, got %v", val)
 		}
 
-		val = sessions.Values["token"]
-		if token, ok := val.(string); !ok {
-			t.Errorf("Setup failed")
-		} else if token != "fakeToken" {
-			t.Errorf("Setup failed expeced %s, got %s", "fakeToken", token)
+		if val := sessions.Values["token"]; val != nil {
+			t.Errorf("Expected token to be nil after logout, got %v", val)
+		}
+	})
+
+	t.Run("Without logged in user, session is still set to 0", func(t *testing.T) {
+		u := &models.User{ID: 100, SessionToken: "fakeToken"}
+		clearSessions(t, req)
+		setLoginCredentials(t, req,u.ID, u.SessionToken)
+
+		verifySetLoginCredentials(t, req, u.ID, u.SessionToken)
+
+		mockDataStore.EXPECT().UpdateSessionToken(u.ID).Return(nil).Times(0)
+		session.Logout(&models.User{}, mockDataStore, rec, req)
+
+		sessions, err := session.Get(req, "session")
+
+		if err != nil {
+			t.Fatal(err)
 		}
 
-		//session.Logout(&models.User{}, mockDataStore, rec, req)
+		if val := sessions.Values["id"]; val != nil {
+			t.Errorf("Expected ID to be nil after logout, got %v", val)
+		}
+
+		if val := sessions.Values["token"]; val != nil {
+			t.Errorf("Expected token to be nil after logout, got %v", val)
+		}
 	})
 }
