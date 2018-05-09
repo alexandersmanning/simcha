@@ -9,9 +9,9 @@ import (
 
 type SessionStore interface {
 	CurrentUser(db models.Datastore, r *http.Request) (*models.User, error)
-	Login(u *models.User, w http.ResponseWriter, r *http.Request) error
+	Login(u *models.User, db models.Datastore, w http.ResponseWriter, r *http.Request) error
 	IsLoggedIn(db models.Datastore, r *http.Request) (bool, error)
-	Logout(u *models.User, db models.Datastore, w http.ResponseWriter, r *http.Request) error
+	Logout(db models.Datastore, w http.ResponseWriter, r *http.Request) error
 }
 
 type Session struct {
@@ -24,14 +24,19 @@ func InitStore(secret string) *Session {
 }
 
 
-func (s *Session) Login(u *models.User, w http.ResponseWriter, r *http.Request) error {
+func (s *Session) Login(u *models.User, db models.Datastore, w http.ResponseWriter, r *http.Request) error {
 	session, err := s.Get(r, "session")
 	if err != nil {
 		return err
 	}
 
-	session.Values["id"] = u.ID
-	session.Values["token"] = u.SessionToken
+	us, err := db.CreateUserSession(u)
+	if err != nil {
+		return err
+	}
+
+	session.Values["id"] = us.ID
+	session.Values["token"] = us.SessionToken
 
 	if err := session.Save(r, w); err != nil {
 		return err
@@ -40,8 +45,13 @@ func (s *Session) Login(u *models.User, w http.ResponseWriter, r *http.Request) 
 	return nil
 }
 
-func (s *Session) Logout(u *models.User, db models.Datastore, w http.ResponseWriter, r *http.Request) error {
+func (s *Session) Logout(db models.Datastore, w http.ResponseWriter, r *http.Request) error {
 	session, err := s.Get(r, "session")
+	if err != nil {
+		return err
+	}
+
+	currentId, currentToken, err := getSessionValues(s, r)
 	if err != nil {
 		return err
 	}
@@ -53,11 +63,11 @@ func (s *Session) Logout(u *models.User, db models.Datastore, w http.ResponseWri
 	}
 
 	// User does not exists, just return nil
-	if u.ID == 0 {
+	if currentId == 0 {
 		return nil
 	}
 
-	return db.UpdateSessionToken(u.ID)
+	return db.RemoveSessionToken(currentId, currentToken)
 }
 
 func (s *Session) IsLoggedIn(db models.Datastore, r *http.Request) (bool, error) {
@@ -79,7 +89,7 @@ func (s *Session) CurrentUser(db models.Datastore, r *http.Request) (*models.Use
 
 	id, token, err := getSessionValues(s, r)
 	if err != nil {
-		return u, err
+		return &u, err
 	}
 
 	u, err = db.GetUserBySessionToken(id, token)

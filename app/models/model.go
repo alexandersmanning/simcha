@@ -15,6 +15,7 @@ import (
 type Datastore interface {
 	PostStore
 	UserStore
+	UserSessionStore
 }
 
 //DB is the public struct whose methods interact directly with the database
