@@ -21,10 +21,8 @@ type User struct {
 //UserStore is the interface for all User functions that interact with the database
 type UserStore interface {
 	GetUserByEmailAndPassword(email, password string) (User, error)
-	GetUserBySessionToken(id int, token string) (User, error)
 	UserExists(email string) (bool, error)
 	CreateUser(u *User) error
-	UpdateSessionToken(id int) error
 }
 
 //GetUserByEmailAndPassword checks if the user is in the database, and if it is verifies if the password matches
@@ -184,20 +182,20 @@ func (db *DB) CreateUser(u *User) error {
 //	return nil
 //}
 
-func (db *DB) UpdateSessionToken(id int) error {
-	token, err := CreateSessionToken()
-	if err != nil {
-		return err
-	}
-
-	_, err = db.Query(
-		`UPDATE users SET session_token = $1 WHERE id = $2`,
-	token, id)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
+//func (db *DB) UpdateSessionToken(id int) error {
+//	token, err := CreateSessionToken()
+//	if err != nil {
+//		return err
+//	}
+//
+//	_, err = db.Query(
+//		`UPDATE users SET session_token = $1 WHERE id = $2`,
+//	token, id)
+//
+//	if err != nil {
+//		return err
+//	}
+//
+//	return nil
+//}
 

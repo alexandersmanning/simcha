@@ -11,6 +11,7 @@ type UserSession struct {
 type UserSessionStore interface {
 	CreateUserSession(u *User) (UserSession, error)
 	GetUserBySessionToken(userId int, token string) (User, error)
+	RemoveSessionToken(userId int, token string) error
 }
 
 func (db *DB) CreateUserSession(u *User) (UserSession, error){
