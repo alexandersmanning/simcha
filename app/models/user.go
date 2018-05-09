@@ -3,7 +3,6 @@ package models
 import (
 	"time"
 
-	"github.com/alexandersmanning/webapputil"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -57,27 +56,27 @@ func (db *DB) GetUserByEmailAndPassword(email, password string) (User, error) {
 	return u, nil
 }
 
-func (db *DB) GetUserBySessionToken(id int, token string) (User, error) {
-	u := User{}
-	rows, err := db.Query(
-		`SELECT ID, Email FROM users WHERE id = $1 AND session_token = $2`,
-		id, token)
+//func (db *DB) GetUserBySessionToken(id int, token string) (User, error) {
+//	u := User{}
+//	rows, err := db.Query(
+//		`SELECT ID, Email FROM users WHERE id = $1 AND session_token = $2`,
+//		id, token)
+//
+//	defer rows.Close()
+//
+//	if err != nil {
+//		return u, err
+//	}
+//
+//	for rows.Next() {
+//		err := rows.Scan(&u.ID, &u.Email)
+//		if err != nil {
+//			return u, err
+//		}
+//	}
 
-	defer rows.Close()
-
-	if err != nil {
-		return u, err
-	}
-
-	for rows.Next() {
-		err := rows.Scan(&u.ID, &u.Email)
-		if err != nil {
-			return u, err
-		}
-	}
-
-	return u, nil
-}
+//	return u, nil
+//}
 
 func (db *DB) UpdatePassword(u *User, previousPassword, password, confirmationPassword string) error {
 	//Verify password for the new user
@@ -89,8 +88,7 @@ func (db *DB) UpdatePassword(u *User, previousPassword, password, confirmationPa
 }
 
 func (u *User) setPassword() error {
-	err := verifyPassword(u.Password, u.ConfirmationPassword)
-	if err != nil {
+	if err := verifyPassword(u.Password, u.ConfirmationPassword); err != nil {
 		return err
 	}
 
@@ -101,19 +99,6 @@ func (u *User) setPassword() error {
 
 	u.PasswordDigest = string(passwordByte)
 	return nil
-}
-
-func createPassword(password, confirmation string) (string, error) {
-	if err := verifyPassword(password, confirmation); err != nil {
-		return "", err
-	}
-
-	passwordByte, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", &modelError{"Password", err.Error()}
-	}
-
-	return string(passwordByte), nil
 }
 
 func verifyPassword(password, confirmation string) error {
@@ -164,19 +149,15 @@ func (db *DB) CreateUser(u *User) error {
 		return err
 	}
 
-	if err := u.ensureSessionToken(); err != nil {
-		return err
-	}
-
 	//to be handled by the middleware
 	u.CreatedAt = time.Now().UTC()
 	u.ModifiedAt = time.Now().UTC()
 
 	rows, err := db.Query(`
-		INSERT INTO users (email, password_digest, session_token, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO users (email, password_digest, created_at, modified_at)
+			VALUES ($1, $2, $3, $4)
 			RETURNING id
-		`, u.Email, u.PasswordDigest, u.SessionToken, u.CreatedAt, u.ModifiedAt)
+		`, u.Email, u.PasswordDigest, u.CreatedAt, u.ModifiedAt)
 
 	if err != nil {
 		return err
@@ -193,15 +174,15 @@ func (db *DB) CreateUser(u *User) error {
 	return nil
 }
 
-func (u *User) ensureSessionToken() error {
-	if token, err := CreateSessionToken(); err != nil {
-		return err
-	} else if u.SessionToken == "" {
-		u.SessionToken = token
-	}
-
-	return nil
-}
+//func (u *User) ensureSessionToken() error {
+//	if token, err := CreateSessionToken(); err != nil {
+//		return err
+//	} else if u.SessionToken == "" {
+//		u.SessionToken = token
+//	}
+//
+//	return nil
+//}
 
 func (db *DB) UpdateSessionToken(id int) error {
 	token, err := CreateSessionToken()
@@ -220,13 +201,3 @@ func (db *DB) UpdateSessionToken(id int) error {
 	return nil
 }
 
-//CreateSessionToken returns an base64 secure random token
-func CreateSessionToken() (string, error) {
-	token, err := webapputil.GenerateSecureRandom()
-
-	if err != nil {
-		return "", err
-	}
-
-	return token, nil
-}

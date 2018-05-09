@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/gorilla/sessions"
+	"errors"
 )
 
 type SessionStore interface {
@@ -76,26 +77,40 @@ func (s *Session) IsLoggedIn(db models.Datastore, r *http.Request) (bool, error)
 func (s *Session) CurrentUser(db models.Datastore, r *http.Request) (*models.User, error) {
 	var u models.User
 
-	session, err := s.Get(r, "session")
-
+	id, token, err := getSessionValues(s, r)
 	if err != nil {
-		return &u, err
-	}
-
-	val := session.Values["id"]
-	id, ok := val.(int);
-
-	if !ok {
-		return &u, nil
-	}
-
-	val = session.Values["token"]
-	token, ok := val.(string)
-
-	if !ok {
-		return &u, nil
+		return u, err
 	}
 
 	u, err = db.GetUserBySessionToken(id, token)
 	return &u, err
+}
+
+func getSessionValues(s *Session, r *http.Request) (int, string, error){
+	session, err := s.Get(r, "session")
+
+	var id int
+	var token string
+
+	if err != nil {
+		return id, token, err
+	}
+
+	val := session.Values["id"]
+	id, ok := val.(int)
+
+	if !ok {
+		return id, token, errors.New("no session id found")
+	}
+
+	val = session.Values["token"]
+	token, ok = val.(string)
+
+	if !ok {
+		return id, token, errors.New("no session token found")
+	}
+
+
+	return  id, token, nil
+
 }
