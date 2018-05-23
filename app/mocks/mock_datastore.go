@@ -70,6 +70,19 @@ func (mr *MockDatastoreMockRecorder) CreateUser(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockDatastore)(nil).CreateUser), arg0)
 }
 
+// CreateUserSession mocks base method
+func (m *MockDatastore) CreateUserSession(arg0 *models.User) (models.UserSession, error) {
+	ret := m.ctrl.Call(m, "CreateUserSession", arg0)
+	ret0, _ := ret[0].(models.UserSession)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateUserSession indicates an expected call of CreateUserSession
+func (mr *MockDatastoreMockRecorder) CreateUserSession(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserSession", reflect.TypeOf((*MockDatastore)(nil).CreateUserSession), arg0)
+}
+
 // GetUserByEmailAndPassword mocks base method
 func (m *MockDatastore) GetUserByEmailAndPassword(arg0, arg1 string) (models.User, error) {
 	ret := m.ctrl.Call(m, "GetUserByEmailAndPassword", arg0, arg1)
@@ -96,16 +109,16 @@ func (mr *MockDatastoreMockRecorder) GetUserBySessionToken(arg0, arg1 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserBySessionToken", reflect.TypeOf((*MockDatastore)(nil).GetUserBySessionToken), arg0, arg1)
 }
 
-// UpdateSessionToken mocks base method
-func (m *MockDatastore) UpdateSessionToken(arg0 int) error {
-	ret := m.ctrl.Call(m, "UpdateSessionToken", arg0)
+// RemoveSessionToken mocks base method
+func (m *MockDatastore) RemoveSessionToken(arg0 int, arg1 string) error {
+	ret := m.ctrl.Call(m, "RemoveSessionToken", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateSessionToken indicates an expected call of UpdateSessionToken
-func (mr *MockDatastoreMockRecorder) UpdateSessionToken(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSessionToken", reflect.TypeOf((*MockDatastore)(nil).UpdateSessionToken), arg0)
+// RemoveSessionToken indicates an expected call of RemoveSessionToken
+func (mr *MockDatastoreMockRecorder) RemoveSessionToken(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveSessionToken", reflect.TypeOf((*MockDatastore)(nil).RemoveSessionToken), arg0, arg1)
 }
 
 // UserExists mocks base method
