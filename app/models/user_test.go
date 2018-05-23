@@ -56,25 +56,25 @@ func TestUserExists(t *testing.T) {
 	})
 }
 
-func TestEnsureSessionToken(t *testing.T) {
-	clearUsers(t)
-	u := User{Email: "email@fake.com"}
-
-	if err := u.ensureSessionToken(); err != nil {
-		t.Fatal(err)
-	}
-
-	token := u.SessionToken
-	if token == "" {
-		t.Errorf("Expected session token to be assigned, Session Token is %s", token)
-	}
-
-	if err := u.ensureSessionToken(); err != nil {
-		t.Fatal(err)
-	} else if u.SessionToken != token {
-		t.Errorf("Expected session token to remain the %s, instead got %s", token, u.SessionToken)
-	}
-}
+//func TestEnsureSessionToken(t *testing.T) {
+//	clearUsers(t)
+//	u := User{Email: "email@fake.com"}
+//
+//	if err := u.ensureSessionToken(); err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	token := u.SessionToken
+//	if token == "" {
+//		t.Errorf("Expected session token to be assigned, Session Token is %s", token)
+//	}
+//
+//	if err := u.ensureSessionToken(); err != nil {
+//		t.Fatal(err)
+//	} else if u.SessionToken != token {
+//		t.Errorf("Expected session token to remain the %s, instead got %s", token, u.SessionToken)
+//	}
+//}
 func TestCreateUser(t *testing.T) {
 	//db := database.GetStore()
 

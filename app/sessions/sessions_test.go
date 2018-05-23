@@ -74,11 +74,18 @@ func TestLogin(t *testing.T) {
 	req, _ := http.NewRequest("POST", "/login", nil)
 	rec := httptest.NewRecorder()
 
-	u := models.User{ID: 100, SessionToken: "fakeToken"}
+	u := models.User{ID: 200}
+	us := models.UserSession{ID: 100, SessionToken: "fake_token"}
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockDatastore := mocks.NewMockDatastore(mockCtrl)
+	mockDatastore.EXPECT().CreateUserSession(&u).Return(us, nil)
 
 	clearSessions(t, req)
 
-	if err := session.Login(&u, rec, req); err != nil {
+	if err := session.Login(&u, mockDatastore, rec, req); err != nil {
 		t.Fatal(err)
 	}
 
@@ -91,17 +98,17 @@ func TestLogin(t *testing.T) {
 	val := testSession.Values["id"]
 
 	if id, ok := val.(int); !ok {
-		t.Errorf("Expected a val of %d, found nothing", u.ID)
-	} else if id != u.ID {
-		t.Errorf("Expected a val of %d, got %d", u.ID, id)
+		t.Errorf("Expected a val of %d, found nothing", us.ID)
+	} else if id != us.ID {
+		t.Errorf("Expected a val of %d, got %d", us.ID, id)
 	}
 
 	val = testSession.Values["token"]
 
 	if token, ok := val.(string); !ok {
-		t.Errorf("Expected a val of %s, found nothing", u.SessionToken)
-	} else if token != u.SessionToken {
-		t.Errorf("Expected a val of %s, got %s", u.SessionToken, token)
+		t.Errorf("Expected a val of %s, found nothing", us.SessionToken)
+	} else if token != us.SessionToken {
+		t.Errorf("Expected a val of %s, got %s", us.SessionToken, token)
 	}
 
 }
@@ -110,20 +117,22 @@ func TestLogout(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/logout", nil)
 	rec := httptest.NewRecorder()
 
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	mockDataStore := mocks.NewMockDatastore(mockCtrl)
 
 	t.Run("Logout with logged in user", func(t *testing.T) {
-		u := &models.User{ID: 100, SessionToken: "fakeToken" }
+		us := models.UserSession{ID: 100, SessionToken: "fake_token"}
+
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockDataStore := mocks.NewMockDatastore(mockCtrl)
+
 		clearSessions(t, req)
-		setLoginCredentials(t, req, u.ID, u.SessionToken)
+		setLoginCredentials(t, req, us.ID, us.SessionToken)
 
-		verifySetLoginCredentials(t, req, u.ID, u.SessionToken)
+		verifySetLoginCredentials(t, req, us.ID, us.SessionToken)
 
-		mockDataStore.EXPECT().UpdateSessionToken(u.ID).Return(nil).Times(1)
-		session.Logout(u, mockDataStore, rec, req)
+		mockDataStore.EXPECT().RemoveSessionToken(us.ID, us.SessionToken).Return(nil).Times(1)
+		session.Logout(mockDataStore, rec, req)
 
 		sessions, err := session.Get(req, "session")
 
@@ -141,14 +150,16 @@ func TestLogout(t *testing.T) {
 	})
 
 	t.Run("Without logged in user, session is still set to 0", func(t *testing.T) {
-		u := &models.User{ID: 100, SessionToken: "fakeToken"}
+		us := models.UserSession{ID: 100, SessionToken: "fake_token"}
+
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockDataStore := mocks.NewMockDatastore(mockCtrl)
 		clearSessions(t, req)
-		setLoginCredentials(t, req,u.ID, u.SessionToken)
 
-		verifySetLoginCredentials(t, req, u.ID, u.SessionToken)
-
-		mockDataStore.EXPECT().UpdateSessionToken(u.ID).Return(nil).Times(0)
-		session.Logout(&models.User{}, mockDataStore, rec, req)
+		mockDataStore.EXPECT().RemoveSessionToken(us.ID, us.SessionToken).Return(nil).Times(0)
+		session.Logout(mockDataStore, rec, req)
 
 		sessions, err := session.Get(req, "session")
 

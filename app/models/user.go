@@ -13,7 +13,6 @@ type User struct {
 	Password             string `json:"password"`
 	ConfirmationPassword string `json:"confirmationPassword"`
 	PasswordDigest       string	`json:"-"`
-	SessionToken         string `json:"-"`
 	CreatedAt            time.Time `json:"createdAt,omitempty"`
 	ModifiedAt           time.Time `json:"modifiedAt,omitempty"`
 }
@@ -29,7 +28,7 @@ type UserStore interface {
 func (db *DB) GetUserByEmailAndPassword(email, password string) (User, error) {
 	u := User{}
 	rows, err := db.Query(
-		`SELECT id, email, password_digest, session_token FROM users WHERE email = $1`,
+		`SELECT id, email, password_digest FROM users WHERE email = $1`,
 		email,
 	)
 
@@ -40,7 +39,7 @@ func (db *DB) GetUserByEmailAndPassword(email, password string) (User, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		if err := rows.Scan(&u.ID, &u.Email, &u.PasswordDigest, &u.SessionToken); err != nil {
+		if err := rows.Scan(&u.ID, &u.Email, &u.PasswordDigest); err != nil {
 			return User{}, err
 		}
 	}
@@ -76,6 +75,7 @@ func (db *DB) GetUserByEmailAndPassword(email, password string) (User, error) {
 //	return u, nil
 //}
 
+//TODO finish this function
 func (db *DB) UpdatePassword(u *User, previousPassword, password, confirmationPassword string) error {
 	//Verify password for the new user
 	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordDigest), []byte(previousPassword)); err != nil {
