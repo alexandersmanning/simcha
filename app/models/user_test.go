@@ -56,25 +56,6 @@ func TestUserExists(t *testing.T) {
 	})
 }
 
-//func TestEnsureSessionToken(t *testing.T) {
-//	clearUsers(t)
-//	u := User{Email: "email@fake.com"}
-//
-//	if err := u.ensureSessionToken(); err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	token := u.SessionToken
-//	if token == "" {
-//		t.Errorf("Expected session token to be assigned, Session Token is %s", token)
-//	}
-//
-//	if err := u.ensureSessionToken(); err != nil {
-//		t.Fatal(err)
-//	} else if u.SessionToken != token {
-//		t.Errorf("Expected session token to remain the %s, instead got %s", token, u.SessionToken)
-//	}
-//}
 func TestCreateUser(t *testing.T) {
 	//db := database.GetStore()
 
@@ -131,10 +112,6 @@ func TestCreateUser(t *testing.T) {
 
 		if u.PasswordDigest == "" {
 			t.Errorf("Expected a digest, got %s", u.PasswordDigest)
-		}
-
-		if u.SessionToken == "" {
-			t.Errorf("Expected a session token, got %s", u.SessionToken)
 		}
 	})
 }
@@ -193,4 +170,27 @@ func TestGetUserByEmailAndPassword(t *testing.T) {
 			t.Errorf("Expected %v error, got %v", "Email or Password", err)
 		}
 	})
+}
+
+func TestUpdatePassword(t *testing.T) {
+	clearUsers(t)
+	u := User{Email: "fake@email.com", Password: "correctPassword", ConfirmationPassword: "correctPassword" }
+	if err := db.CreateUser(&u); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("It fails if the previous password does not match", func(t *testing.T) {
+		err := db.UpdatePassword(
+			&u,
+			"wrongPassword",
+			"newPassword",
+			"newPassword")
+
+		if err == nil {
+			t.Error("Expected an error for wrong password, go nothing")
+		} else if val, ok := err.(*modelError); !ok || val.fieldName != "Previous Password" {
+			t.Errorf("Expected %v, got %v", "Previous Password", err)
+		}
+	})
+
 }

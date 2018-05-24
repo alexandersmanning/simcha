@@ -20,6 +20,7 @@ type User struct {
 //UserStore is the interface for all User functions that interact with the database
 type UserStore interface {
 	GetUserByEmailAndPassword(email, password string) (User, error)
+	UpdatePassword(u *User, previousPassword, password, confirmationPassword string) error
 	UserExists(email string) (bool, error)
 	CreateUser(u *User) error
 }
@@ -53,35 +54,35 @@ func (db *DB) GetUserByEmailAndPassword(email, password string) (User, error) {
 	return u, nil
 }
 
-//func (db *DB) GetUserBySessionToken(id int, token string) (User, error) {
-//	u := User{}
-//	rows, err := db.Query(
-//		`SELECT ID, Email FROM users WHERE id = $1 AND session_token = $2`,
-//		id, token)
-//
-//	defer rows.Close()
-//
-//	if err != nil {
-//		return u, err
-//	}
-//
-//	for rows.Next() {
-//		err := rows.Scan(&u.ID, &u.Email)
-//		if err != nil {
-//			return u, err
-//		}
-//	}
-
-//	return u, nil
-//}
-
-//TODO finish this function
 func (db *DB) UpdatePassword(u *User, previousPassword, password, confirmationPassword string) error {
 	//Verify password for the new user
 	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordDigest), []byte(previousPassword)); err != nil {
 		return &modelError{"Previous Password", "Does not match current password"}
 	}
 
+	u.Password, u.ConfirmationPassword = password, confirmationPassword
+
+	if err := u.setPassword(); err != nil {
+		return err
+	}
+	// save user
+	rows, err := db.Query(`
+		UPDATE users SET password_digest = $1 WHERE id = $2
+	`, u.PasswordDigest, u.ID)
+
+	//TODO Verify if rows.Close() is needed if not used
+	defer rows.Close()
+
+	if err != nil {
+		return err
+	}
+
+	//remove all existing sessions if successfull
+	if err := db.RemoveAllUserSessions(u.ID); err != nil {
+		return err
+	}
+
+	//logout will be done in the controller
 	return nil
 }
 
@@ -171,31 +172,3 @@ func (db *DB) CreateUser(u *User) error {
 
 	return nil
 }
-
-//func (u *User) ensureSessionToken() error {
-//	if token, err := CreateSessionToken(); err != nil {
-//		return err
-//	} else if u.SessionToken == "" {
-//		u.SessionToken = token
-//	}
-//
-//	return nil
-//}
-
-//func (db *DB) UpdateSessionToken(id int) error {
-//	token, err := CreateSessionToken()
-//	if err != nil {
-//		return err
-//	}
-//
-//	_, err = db.Query(
-//		`UPDATE users SET session_token = $1 WHERE id = $2`,
-//	token, id)
-//
-//	if err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
-

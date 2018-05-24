@@ -109,6 +109,18 @@ func (mr *MockDatastoreMockRecorder) GetUserBySessionToken(arg0, arg1 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserBySessionToken", reflect.TypeOf((*MockDatastore)(nil).GetUserBySessionToken), arg0, arg1)
 }
 
+// RemoveAllUserSessions mocks base method
+func (m *MockDatastore) RemoveAllUserSessions(arg0 int) error {
+	ret := m.ctrl.Call(m, "RemoveAllUserSessions", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveAllUserSessions indicates an expected call of RemoveAllUserSessions
+func (mr *MockDatastoreMockRecorder) RemoveAllUserSessions(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveAllUserSessions", reflect.TypeOf((*MockDatastore)(nil).RemoveAllUserSessions), arg0)
+}
+
 // RemoveSessionToken mocks base method
 func (m *MockDatastore) RemoveSessionToken(arg0 int, arg1 string) error {
 	ret := m.ctrl.Call(m, "RemoveSessionToken", arg0, arg1)
@@ -119,6 +131,18 @@ func (m *MockDatastore) RemoveSessionToken(arg0 int, arg1 string) error {
 // RemoveSessionToken indicates an expected call of RemoveSessionToken
 func (mr *MockDatastoreMockRecorder) RemoveSessionToken(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveSessionToken", reflect.TypeOf((*MockDatastore)(nil).RemoveSessionToken), arg0, arg1)
+}
+
+// UpdatePassword mocks base method
+func (m *MockDatastore) UpdatePassword(arg0 *models.User, arg1, arg2, arg3 string) error {
+	ret := m.ctrl.Call(m, "UpdatePassword", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePassword indicates an expected call of UpdatePassword
+func (mr *MockDatastoreMockRecorder) UpdatePassword(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePassword", reflect.TypeOf((*MockDatastore)(nil).UpdatePassword), arg0, arg1, arg2, arg3)
 }
 
 // UserExists mocks base method
