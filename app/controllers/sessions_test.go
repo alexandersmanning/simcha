@@ -20,7 +20,7 @@ func TestLogin(t *testing.T) {
 
 	mockSessionStore := mocks.NewMockSessionStore(mockCtrl)
 	mockDataStore := mocks.NewMockDatastore(mockCtrl)
-	env := config.Env{mockDataStore, mockSessionStore}
+	env := config.Env{DB: mockDataStore, Store: mockSessionStore}
 	u := models.User{Email: "fake@email.com", Password: "thisisatestpassword"}
 
 	t.Run("Matching credentials", func(t *testing.T) {
@@ -33,7 +33,7 @@ func TestLogin(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/login", userBuff)
 		mockDataStore.EXPECT().GetUserByEmailAndPassword(u.Email, u.Password).Return(u, nil)
-		mockSessionStore.EXPECT().Login(&u, rec, req).Return(nil)
+		mockSessionStore.EXPECT().Login(&u, env.DB, rec, req).Return(nil)
 
 		Login(&env)(rec, req, nil)
 
@@ -58,7 +58,7 @@ func TestLogin(t *testing.T) {
 
 		userBuff := bytes.NewBuffer(jsonUser)
 
-		rec := httptest.NewRecorder();
+		rec := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/login", userBuff)
 
 		mockDataStore.EXPECT().GetUserByEmailAndPassword(u.Email, u.Password).Return(models.User{}, errors.New("no user found"))
@@ -93,8 +93,7 @@ func TestLogout(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/logout", nil)
 		rec := httptest.NewRecorder()
 
-		mockSessionStore.EXPECT().CurrentUser(env.DB, req).Return(&models.User{}, nil)
-		mockSessionStore.EXPECT().Logout(&models.User{}, env.DB, rec, req).Return(nil)
+		mockSessionStore.EXPECT().Logout(env.DB, rec, req).Return(nil)
 		Logout(env)(rec, req, nil)
 
 		checkStatus(rec.Code, 200, t)
@@ -115,8 +114,7 @@ func TestLogout(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/logout", nil)
 		rec := httptest.NewRecorder()
 
-		mockSessionStore.EXPECT().CurrentUser(env.DB, req).Return(&models.User{}, nil)
-		mockSessionStore.EXPECT().Logout(&models.User{}, env.DB, rec, req).Return(errors.New("session failed"))
+		mockSessionStore.EXPECT().Logout(env.DB, rec, req).Return(errors.New("session failed"))
 
 		Logout(env)(rec, req, nil)
 

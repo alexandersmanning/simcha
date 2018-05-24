@@ -12,6 +12,7 @@ type UserSessionStore interface {
 	CreateUserSession(u *User) (UserSession, error)
 	GetUserBySessionToken(userId int, token string) (User, error)
 	RemoveSessionToken(userId int, token string) error
+	RemoveAllUserSessions(userId int) error
 }
 
 func (db *DB) CreateUserSession(u *User) (UserSession, error){
@@ -67,10 +68,24 @@ func (db *DB) GetUserBySessionToken(userId int, token string) (User, error){
 	return u, nil
 }
 
-func (db *DB) RemoveSessionToken(userId int, token string) (error) {
+func (db *DB) RemoveSessionToken(userId int, token string) error {
 	rows, err := db.Query(`
 		DELETE FROM user_sessions WHERE user_id = $1 AND token = $2
 	`, userId, token)
+
+	defer rows.Close()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *DB) RemoveAllUserSessions(userId int) error {
+	rows, err := db.Query(`
+		DELETE FROM user_sessions WHERE user_id = $1
+	`,userId)
 
 	defer rows.Close()
 

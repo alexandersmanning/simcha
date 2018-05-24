@@ -61,25 +61,25 @@ func (mr *MockSessionStoreMockRecorder) IsLoggedIn(arg0, arg1 interface{}) *gomo
 }
 
 // Login mocks base method
-func (m *MockSessionStore) Login(arg0 *models.User, arg1 http.ResponseWriter, arg2 *http.Request) error {
-	ret := m.ctrl.Call(m, "Login", arg0, arg1, arg2)
+func (m *MockSessionStore) Login(arg0 *models.User, arg1 models.Datastore, arg2 http.ResponseWriter, arg3 *http.Request) error {
+	ret := m.ctrl.Call(m, "Login", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Login indicates an expected call of Login
-func (mr *MockSessionStoreMockRecorder) Login(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockSessionStore)(nil).Login), arg0, arg1, arg2)
+func (mr *MockSessionStoreMockRecorder) Login(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockSessionStore)(nil).Login), arg0, arg1, arg2, arg3)
 }
 
 // Logout mocks base method
-func (m *MockSessionStore) Logout(arg0 *models.User, arg1 models.Datastore, arg2 http.ResponseWriter, arg3 *http.Request) error {
-	ret := m.ctrl.Call(m, "Logout", arg0, arg1, arg2, arg3)
+func (m *MockSessionStore) Logout(arg0 models.Datastore, arg1 http.ResponseWriter, arg2 *http.Request) error {
+	ret := m.ctrl.Call(m, "Logout", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Logout indicates an expected call of Logout
-func (mr *MockSessionStoreMockRecorder) Logout(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Logout", reflect.TypeOf((*MockSessionStore)(nil).Logout), arg0, arg1, arg2, arg3)
+func (mr *MockSessionStoreMockRecorder) Logout(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Logout", reflect.TypeOf((*MockSessionStore)(nil).Logout), arg0, arg1, arg2)
 }
