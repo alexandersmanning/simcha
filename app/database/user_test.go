@@ -1,7 +1,10 @@
-package models
+package database
 
 import (
 	"testing"
+	"github.com/golang/mock/gomock"
+	"github.com/alexandersmanning/simcha/app/models"
+	"github.com/alexandersmanning/simcha/app/mocks/model"
 )
 
 func clearUsers(t *testing.T) {
@@ -57,17 +60,15 @@ func TestUserExists(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	//db := database.GetStore()
-
 	email := "fake@email.com"
 	password := "goodpassword"
 
-	errorTestHelper := func(expectedName string, user User, t *testing.T) {
+	errorTestHelper := func(expectedName string, user models.User, t *testing.T) {
 		t.Helper()
 
 		if err := db.CreateUser(&user); err == nil {
 			t.Error("Expected error, got nothing")
-		} else if ae, ok := err.(*modelError); !ok || ae.fieldName != expectedName {
+		} else if ae, ok := err.(*models.ModelError); !ok || ae.FieldName != expectedName {
 			t.Errorf("Expected error with field %s, of %s", expectedName, err.Error())
 		}
 	}
@@ -79,14 +80,14 @@ func TestCreateUser(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		u := User{Email: email, Password: password, ConfirmationPassword: password}
+		u := models.User{Email: email, Password: password, ConfirmationPassword: password}
 		errorTestHelper("Email", u, t)
 	})
 
 	t.Run("Password is not the proper length", func(t *testing.T) {
 		clearUsers(t)
 		badPassword := "short"
-		u := User{Email: email, Password: badPassword, ConfirmationPassword: badPassword}
+		u := models.User{Email: email, Password: badPassword, ConfirmationPassword: badPassword}
 
 		errorTestHelper("Password", u, t)
 	})
@@ -94,24 +95,21 @@ func TestCreateUser(t *testing.T) {
 	t.Run("Password does not match confirmation", func(t *testing.T) {
 		clearUsers(t)
 		badConfirmation := "nonmatchingpassword"
-		u := User{Email: email, Password: password, ConfirmationPassword: badConfirmation}
+		u := models.User{Email: email, Password: password, ConfirmationPassword: badConfirmation}
 
 		errorTestHelper("ConfirmationPassword", u, t)
 	})
 
 	t.Run("Creates a record and returns User with id", func(t *testing.T) {
-		u := User{Email: email, Password: password, ConfirmationPassword: password}
+		clearUsers(t)
+		u := models.User{Email: email, Password: password, ConfirmationPassword: password}
 
 		if err := db.CreateUser(&u); err != nil {
 			t.Fatal(err)
 		}
 
-		if u.ID == 0 {
-			t.Errorf("Id was not returned, expected int, got %d", u.ID)
-		}
-
-		if u.PasswordDigest == "" {
-			t.Errorf("Expected a digest, got %s", u.PasswordDigest)
+		if u.Id == 0 {
+			t.Errorf("Id was not returned, expected int, got %d", u.Id)
 		}
 	})
 }
@@ -121,7 +119,7 @@ func TestGetUserByEmailAndPassword(t *testing.T) {
 
 	email := "email@fake.com"
 	password := "goodpassword"
-	u := User{Email: email, Password: password, ConfirmationPassword: password}
+	u := models.User{Email: email, Password: password, ConfirmationPassword: password}
 
 	if err := db.CreateUser(&u); err != nil {
 		t.Fatal(err)
@@ -134,8 +132,8 @@ func TestGetUserByEmailAndPassword(t *testing.T) {
 			t.Error(err)
 		}
 
-		if user.ID != u.ID {
-			t.Errorf("Expected to find user of ID %d, got %d", u.ID, user.ID)
+		if user.Id != u.Id {
+			t.Errorf("Expected to find user of ID %d, got %d", u.Id, user.Id)
 		}
 	})
 
@@ -146,11 +144,11 @@ func TestGetUserByEmailAndPassword(t *testing.T) {
 			t.Error("Expected error for missing user, got nothing")
 		}
 
-		if user.ID != 0 {
+		if user.Id != 0 {
 			t.Errorf("Expected no user to be found, got %v", user)
 		}
 
-		if ae, ok := err.(*modelError); !ok || ae.fieldName != "Email or Password" {
+		if ae, ok := err.(*models.ModelError); !ok || ae.FieldName != "Email or Password" {
 			t.Errorf("Expected error %s, got %s", "Email or Password", err.Error())
 		}
 	})
@@ -162,11 +160,11 @@ func TestGetUserByEmailAndPassword(t *testing.T) {
 			t.Error("Expected an erorr for wrong password, got nothing")
 		}
 
-		if user.ID != 0 {
+		if user.Id != 0 {
 			t.Errorf("Expected no user to be found, got %v", user)
 		}
 
-		if ae, ok := err.(*modelError); !ok || ae.fieldName != "Email or Password" {
+		if ae, ok := err.(*models.ModelError); !ok || ae.FieldName != "Email or Password" {
 			t.Errorf("Expected %v error, got %v", "Email or Password", err)
 		}
 	})
@@ -174,21 +172,30 @@ func TestGetUserByEmailAndPassword(t *testing.T) {
 
 func TestUpdatePassword(t *testing.T) {
 	clearUsers(t)
-	u := User{Email: "fake@email.com", Password: "correctPassword", ConfirmationPassword: "correctPassword" }
+	u := models.User{Email: "fake@email.com", Password: "correctPassword", ConfirmationPassword: "correctPassword" }
 	if err := db.CreateUser(&u); err != nil {
 		t.Fatal(err)
 	}
 
 	t.Run("It fails if the previous password does not match", func(t *testing.T) {
+		previousPassword, password, confirmation := "wrongPassword", "newPassword", "newPassword"
+		expectedErr := &models.ModelError{FieldName: "Previous Password", ErrorText: "test text"}
+
+		mockCtrl := gomock.NewController(t)
+		userActions := mockmodel.NewMockUserAction(mockCtrl)
+
+		userActions.EXPECT().ComparePassword(previousPassword).Return(expectedErr)
+
 		err := db.UpdatePassword(
-			&u,
-			"wrongPassword",
-			"newPassword",
-			"newPassword")
+			 userActions,
+			 previousPassword,
+			 password,
+			 confirmation,
+		)
 
 		if err == nil {
 			t.Error("Expected an error for wrong password, go nothing")
-		} else if val, ok := err.(*modelError); !ok || val.fieldName != "Previous Password" {
+		} else if val, ok := err.(*models.ModelError); !ok || val.FieldName != "Previous Password" {
 			t.Errorf("Expected %v, got %v", "Previous Password", err)
 		}
 	})

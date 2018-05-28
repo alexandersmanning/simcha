@@ -8,9 +8,9 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
 	"github.com/alexandersmanning/simcha/app/config"
-	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/alexandersmanning/simcha/app/routes"
 	"github.com/alexandersmanning/simcha/app/sessions"
+	"github.com/alexandersmanning/simcha/app/database"
 )
 
 func main() {
@@ -18,7 +18,7 @@ func main() {
 		panic(err)
 	}
 
-	db, err := models.InitDB(os.Getenv("DB_CONNECTION"))
+	db, err := database.InitDB(os.Getenv("DB_CONNECTION"))
 
 	defer db.Close()
 

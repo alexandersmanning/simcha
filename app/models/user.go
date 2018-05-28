@@ -8,7 +8,7 @@ import (
 
 // User struct is exported
 type User struct {
-	ID                   int    `json:"id"`
+	Id                   int    `json:"id"`
 	Email                string `json:"email"`
 	Password             string `json:"password"`
 	ConfirmationPassword string `json:"confirmationPassword"`
@@ -17,158 +17,76 @@ type User struct {
 	ModifiedAt           time.Time `json:"modifiedAt,omitempty"`
 }
 
-//UserStore is the interface for all User functions that interact with the database
-type UserStore interface {
-	GetUserByEmailAndPassword(email, password string) (User, error)
-	UpdatePassword(u *User, previousPassword, password, confirmationPassword string) error
-	UserExists(email string) (bool, error)
-	CreateUser(u *User) error
+// Idea from https://stackoverflow.com/questions/26027350/go-interface-fields
+type UserAction interface {
+	ModelAction
+	User() *User
+	SetPassword(password, confirmation string)
+	SetDigest(digest string)
+	CreateDigest() (string, error)
+	VerifyPassword() error
+	ComparePassword(password string) error
 }
 
-//GetUserByEmailAndPassword checks if the user is in the database, and if it is verifies if the password matches
-func (db *DB) GetUserByEmailAndPassword(email, password string) (User, error) {
-	u := User{}
-	rows, err := db.Query(
-		`SELECT id, email, password_digest FROM users WHERE email = $1`,
-		email,
-	)
-
-	if err != nil {
-		return User{}, err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		if err := rows.Scan(&u.ID, &u.Email, &u.PasswordDigest); err != nil {
-			return User{}, err
-		}
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordDigest), []byte(password))
-
-	if u.Email == "" || err != nil {
-		return User{}, &modelError{"Email or Password", "was not found, or does not match our records"}
-	}
-
-	return u, nil
+func (u *User) User() *User {
+	return u
 }
 
-func (db *DB) UpdatePassword(u *User, previousPassword, password, confirmationPassword string) error {
-	//Verify password for the new user
-	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordDigest), []byte(previousPassword)); err != nil {
-		return &modelError{"Previous Password", "Does not match current password"}
-	}
-
-	u.Password, u.ConfirmationPassword = password, confirmationPassword
-
-	if err := u.setPassword(); err != nil {
-		return err
-	}
-	// save user
-	rows, err := db.Query(`
-		UPDATE users SET password_digest = $1 WHERE id = $2
-	`, u.PasswordDigest, u.ID)
-
-	//TODO Verify if rows.Close() is needed if not used
-	defer rows.Close()
-
-	if err != nil {
-		return err
-	}
-
-	//remove all existing sessions if successfull
-	if err := db.RemoveAllUserSessions(u.ID); err != nil {
-		return err
-	}
-
-	//logout will be done in the controller
-	return nil
-}
-
-func (u *User) setPassword() error {
-	if err := verifyPassword(u.Password, u.ConfirmationPassword); err != nil {
-		return err
+func (u *User) CreateDigest() (string, error) {
+	var digest string
+	if err := u.VerifyPassword(); err != nil {
+		return digest, err
 	}
 
 	passwordByte, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		return digest, err
 	}
 
-	u.PasswordDigest = string(passwordByte)
+	digest = string(passwordByte)
+	return digest, nil
+}
+
+func (u *User) VerifyPassword() error {
+	if len(u.Password) < 6 {
+		return &ModelError{"Password", "must be at least 6 characters long"}
+	}
+
+	if u.Password != u.ConfirmationPassword {
+		return &ModelError{"ConfirmationPassword", "does not match Password"}
+	}
+
 	return nil
 }
 
-func verifyPassword(password, confirmation string) error {
-	if len(password) < 6 {
-		return &modelError{"Password", "must be at least 6 characters long"}
-	}
-
-	if password != confirmation {
-		return &modelError{"ConfirmationPassword", "does not match Password"}
-	}
-
-	return nil
+func (u *User) Timestamps() (time.Time, time.Time) {
+	return u.CreatedAt, u.ModifiedAt
 }
 
-//UserExists checks the existence of an email
-func (db *DB) UserExists(email string) (bool, error) {
-	var count int
-	rows, err := db.Query("SELECT COUNT(*) FROM users WHERE email = $1", email)
-
-	if err != nil {
-		return false, err
+func (u *User) SetTimestamps() {
+	if (u.CreatedAt == time.Time{}) {
+		u.CreatedAt = time.Now().UTC()
 	}
-
-	defer rows.Close()
-	for rows.Next() {
-		if err := rows.Scan(&count); err != nil {
-			return false, err
-		}
-
-		if count > 0 {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
-//CreateUser adds user to system if they do not already exist, and have an appropriate email/password
-func (db *DB) CreateUser(u *User) error {
-	if exists, err := db.UserExists(u.Email); err != nil {
-		return err
-	} else if exists {
-		return &modelError{"Email", "already exists in the system"}
-	}
-
-	// set password
-	if err := u.setPassword(); err != nil {
-		return err
-	}
-
-	//to be handled by the middleware
-	u.CreatedAt = time.Now().UTC()
 	u.ModifiedAt = time.Now().UTC()
+}
 
-	rows, err := db.Query(`
-		INSERT INTO users (email, password_digest, created_at, modified_at)
-			VALUES ($1, $2, $3, $4)
-			RETURNING id
-		`, u.Email, u.PasswordDigest, u.CreatedAt, u.ModifiedAt)
+func (u *User) SetID(id int) {
+	u.Id = id
+}
 
-	if err != nil {
+func (u *User) SetPassword(password, confirmation string) {
+	u.Password, u.ConfirmationPassword = password, confirmation
+}
+
+func (u *User) SetDigest(digest string) {
+	u.PasswordDigest = digest
+}
+
+func (u *User) ComparePassword(password string) error {
+	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordDigest), []byte(password)); err != nil {
 		return err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		if err := rows.Scan(&u.ID); err != nil {
-			return err
-		}
 	}
 
 	return nil
 }
+

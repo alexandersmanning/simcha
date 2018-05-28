@@ -1,11 +1,11 @@
 package config
 
 import (
-	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/alexandersmanning/simcha/app/sessions"
+	"github.com/alexandersmanning/simcha/app/database"
 )
 
 type Env struct {
-	DB    models.Datastore
+	DB    database.Datastore
 	Store sessions.SessionStore
 }

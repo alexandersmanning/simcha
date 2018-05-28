@@ -5,13 +5,14 @@ import (
 	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/gorilla/sessions"
 	"errors"
+	"github.com/alexandersmanning/simcha/app/database"
 )
 
 type SessionStore interface {
-	CurrentUser(db models.Datastore, r *http.Request) (*models.User, error)
-	Login(u *models.User, db models.Datastore, w http.ResponseWriter, r *http.Request) error
-	IsLoggedIn(db models.Datastore, r *http.Request) (bool, error)
-	Logout(db models.Datastore, w http.ResponseWriter, r *http.Request) error
+	CurrentUser(db database.Datastore, r *http.Request) (*models.User, error)
+	Login(u *models.User, db database.Datastore, w http.ResponseWriter, r *http.Request) error
+	IsLoggedIn(db database.Datastore, r *http.Request) (bool, error)
+	Logout(db database.Datastore, w http.ResponseWriter, r *http.Request) error
 }
 
 type Session struct {
@@ -24,7 +25,7 @@ func InitStore(secret string) *Session {
 }
 
 
-func (s *Session) Login(u *models.User, db models.Datastore, w http.ResponseWriter, r *http.Request) error {
+func (s *Session) Login(u *models.User, db database.Datastore, w http.ResponseWriter, r *http.Request) error {
 	session, err := s.Get(r, "session")
 	if err != nil {
 		return err
@@ -35,7 +36,7 @@ func (s *Session) Login(u *models.User, db models.Datastore, w http.ResponseWrit
 		return err
 	}
 
-	session.Values["id"] = us.ID
+	session.Values["id"] = us.Id
 	session.Values["token"] = us.SessionToken
 
 	if err := session.Save(r, w); err != nil {
@@ -45,7 +46,7 @@ func (s *Session) Login(u *models.User, db models.Datastore, w http.ResponseWrit
 	return nil
 }
 
-func (s *Session) Logout(db models.Datastore, w http.ResponseWriter, r *http.Request) error {
+func (s *Session) Logout(db database.Datastore, w http.ResponseWriter, r *http.Request) error {
 	session, err := s.Get(r, "session")
 	if err != nil {
 		return err
@@ -70,21 +71,21 @@ func (s *Session) Logout(db models.Datastore, w http.ResponseWriter, r *http.Req
 	return db.RemoveSessionToken(currentId, currentToken)
 }
 
-func (s *Session) IsLoggedIn(db models.Datastore, r *http.Request) (bool, error) {
+func (s *Session) IsLoggedIn(db database.Datastore, r *http.Request) (bool, error) {
 	u, err := s.CurrentUser(db, r)
 
 	if err != nil {
 		return false, err
 	}
 
-	if u.ID == 0 {
+	if u.Id == 0 {
 		return false, nil
 	}
 
 	return true, nil
 }
 
-func (s *Session) CurrentUser(db models.Datastore, r *http.Request) (*models.User, error) {
+func (s *Session) CurrentUser(db database.Datastore, r *http.Request) (*models.User, error) {
 	var u models.User
 
 	id, token, err := getSessionValues(s, r)
