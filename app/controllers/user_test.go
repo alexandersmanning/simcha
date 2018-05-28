@@ -8,10 +8,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/golang/mock/gomock"
-	"github.com/alexandersmanning/simcha/app/mocks"
 	"github.com/alexandersmanning/simcha/app/config"
 	"errors"
 	"io/ioutil"
+	"github.com/alexandersmanning/simcha/app/mocks/database"
+	"github.com/alexandersmanning/simcha/app/mocks/sessions"
 )
 
 func TestUserCreate(t *testing.T) {
@@ -20,8 +21,8 @@ func TestUserCreate(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockDatastore := mocks.NewMockDatastore(mockCtrl)
-	mockSessionStore := mocks.NewMockSessionStore(mockCtrl)
+	mockDatastore := mockdatabase.NewMockDatastore(mockCtrl)
+	mockSessionStore := mocksession.NewMockSessionStore(mockCtrl)
 
 	env := &config.Env{DB: mockDatastore, Store: mockSessionStore}
 

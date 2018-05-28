@@ -5,21 +5,22 @@ import (
 	"net/http/httptest"
 	"net/http"
 	"github.com/golang/mock/gomock"
-	"github.com/alexandersmanning/simcha/app/mocks"
 	"github.com/alexandersmanning/simcha/app/config"
 	"github.com/alexandersmanning/simcha/app/models"
 	"encoding/json"
 	"bytes"
 	"io/ioutil"
 	"errors"
+	"github.com/alexandersmanning/simcha/app/mocks/database"
+	"github.com/alexandersmanning/simcha/app/mocks/sessions"
 )
 
 func TestLogin(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockSessionStore := mocks.NewMockSessionStore(mockCtrl)
-	mockDataStore := mocks.NewMockDatastore(mockCtrl)
+	mockSessionStore := mocksession.NewMockSessionStore(mockCtrl)
+	mockDataStore := mockdatabase.NewMockDatastore(mockCtrl)
 	env := config.Env{DB: mockDataStore, Store: mockSessionStore}
 	u := models.User{Email: "fake@email.com", Password: "thisisatestpassword"}
 
@@ -84,8 +85,8 @@ func TestLogout(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockDataStore := mocks.NewMockDatastore(mockCtrl)
-	mockSessionStore := mocks.NewMockSessionStore(mockCtrl)
+	mockDataStore := mockdatabase.NewMockDatastore(mockCtrl)
+	mockSessionStore := mocksession.NewMockSessionStore(mockCtrl)
 
 	env := &config.Env{DB: mockDataStore, Store: mockSessionStore}
 

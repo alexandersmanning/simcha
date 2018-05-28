@@ -1,7 +1,8 @@
-package models
+package database
 
 import (
 	"testing"
+	"github.com/alexandersmanning/simcha/app/models"
 )
 
 func clearPosts(t *testing.T) {
@@ -43,7 +44,7 @@ func TestPostCreation(t *testing.T) {
 	})
 
 	t.Run("One post", func(t *testing.T) {
-		p := Post{
+		p := models.Post{
 			Body:  "Test Body",
 			Title: "Test Title",
 		}

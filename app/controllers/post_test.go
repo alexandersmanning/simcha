@@ -10,8 +10,8 @@ import ( "bytes"
 	"testing"
 
 	"github.com/alexandersmanning/simcha/app/config"
-	"github.com/alexandersmanning/simcha/app/mocks"
 	"github.com/alexandersmanning/simcha/app/models"
+	"github.com/alexandersmanning/simcha/app/mocks/database"
 )
 
 func TestPostIndex(t *testing.T) {
@@ -21,7 +21,7 @@ func TestPostIndex(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockDatastore := mocks.NewMockDatastore(mockCtrl)
+	mockDatastore := mockdatabase.NewMockDatastore(mockCtrl)
 	env := config.Env{DB: mockDatastore}
 
 	var posts []*models.Post
@@ -60,7 +60,7 @@ func TestPostCreate(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockDatastore := mocks.NewMockDatastore(mockCtrl)
+	mockDatastore := mockdatabase.NewMockDatastore(mockCtrl)
 	env := config.Env{DB: mockDatastore}
 
 	post := models.Post{Body: "Test Create Body", Title: "Test Create Title"}
