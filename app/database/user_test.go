@@ -177,6 +177,11 @@ func TestUpdatePassword(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	testHelper := func(t *testing.T,) {
+		t.Helper()
+
+	}
+
 	t.Run("It fails if the previous password does not match", func(t *testing.T) {
 		previousPassword, password, confirmation := "wrongPassword", "newPassword", "newPassword"
 		expectedErr := &models.ModelError{FieldName: "Previous Password", ErrorText: "test text"}
@@ -194,9 +199,29 @@ func TestUpdatePassword(t *testing.T) {
 		)
 
 		if err == nil {
-			t.Error("Expected an error for wrong password, go nothing")
+			t.Error("Expected an error for wrong password, got nothing")
 		} else if val, ok := err.(*models.ModelError); !ok || val.FieldName != "Previous Password" {
 			t.Errorf("Expected %v, got %v", "Previous Password", err)
+		}
+	})
+
+	t.Run("It verifies the new passwords", func(t *testing.T) {
+		previousPassword, password, confirmation := "rightPassword", "nonmatchpassword", "newPassword"
+		expectedErr := &models.ModelError{FieldName: "Password", ErrorText: "Non Matching"}
+
+		mockCtrl := gomock.NewController(t)
+		mockUserAction := mockmodel.NewMockUserAction(mockCtrl)
+
+		mockUserAction.EXPECT().ComparePassword(previousPassword).Return(nil).Times(1)
+		mockUserAction.EXPECT().SetPassword(password, confirmation).Times(1)
+		mockUserAction.EXPECT().CreateDigest().Return("", expectedErr).Times(1)
+
+		err := db.UpdatePassword(mockUserAction, previousPassword, password, confirmation)
+
+		if err == nil {
+			t.Errorf("Expected an error for bad password match, got nothing")
+		} else if val, ok := err.(*models.ModelError); !ok || val.FieldName != "Password" {
+			t.Errorf("Expected %v, got %v", "Password", err)
 		}
 	})
 
