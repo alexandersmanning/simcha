@@ -15,6 +15,27 @@ func clearUsers(t *testing.T) {
 	}
 }
 
+func createTestUser(u *models.User, t *testing.T) int {
+	var id int
+
+	rows, err := db.Query(`
+		INSERT INTO users(email, password_digest) values ($1, $2)
+		RETURNING id
+	`, u.Email, u.PasswordDigest)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for rows.Next() {
+		if err := rows.Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	return id
+}
+
 func TestUserExists(t *testing.T) {
 	existsTest := func(input string, expected bool, t *testing.T) {
 		t.Helper()
@@ -177,11 +198,6 @@ func TestUpdatePassword(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testHelper := func(t *testing.T,) {
-		t.Helper()
-
-	}
-
 	t.Run("It fails if the previous password does not match", func(t *testing.T) {
 		previousPassword, password, confirmation := "wrongPassword", "newPassword", "newPassword"
 		expectedErr := &models.ModelError{FieldName: "Previous Password", ErrorText: "test text"}
@@ -222,6 +238,42 @@ func TestUpdatePassword(t *testing.T) {
 			t.Errorf("Expected an error for bad password match, got nothing")
 		} else if val, ok := err.(*models.ModelError); !ok || val.FieldName != "Password" {
 			t.Errorf("Expected %v, got %v", "Password", err)
+		}
+	})
+
+	t.Run("It updates the digest for the user", func(t *testing.T) {
+		previousPassword, password, confirmation := "rightPassword", "newPassword", "newPassword"
+		var passwordDigest string
+
+		mockCtrl := gomock.NewController(t)
+		mockUserAction := mockmodel.NewMockUserAction(mockCtrl)
+
+		mockUserAction.EXPECT().ComparePassword(previousPassword).Return(nil).Times(1)
+		mockUserAction.EXPECT().SetPassword(password, confirmation).Times(1)
+		mockUserAction.EXPECT().CreateDigest().Return("fake_digest", nil).Times(1)
+		mockUserAction.EXPECT().User().Return(&u).Times(2)
+
+		err := db.UpdatePassword(mockUserAction, previousPassword, password, confirmation)
+
+		if err != nil {
+			t.Error(err)
+		}
+
+		rows, err := db.Query("SELECT password_digest FROM users WHERE id = $1", u.Id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		defer rows.Close()
+
+		for rows.Next() {
+			if err := rows.Scan(&passwordDigest); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		if passwordDigest != "fake_digest" {
+			t.Errorf("Expected %s, got %s", "fake_digest", passwordDigest)
 		}
 	})
 
