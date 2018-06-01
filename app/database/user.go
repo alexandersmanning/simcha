@@ -56,7 +56,6 @@ func (db *DB) UpdatePassword(ua models.UserAction, previousPassword, password, c
 		UPDATE users SET password_digest = $1 WHERE id = $2
 	`, digest, ua.User().Id)
 
-	//TODO Verify if rows.Close() is needed if not used
 	defer rows.Close()
 
 	if err != nil {

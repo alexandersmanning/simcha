@@ -38,6 +38,8 @@ func (db *DB) CreateUserSession(u *models.User) (models.UserSession, error){
 		}
 	}
 
+	us.SessionToken, us.User = token, *u
+
 	return us, nil
 }
 
