@@ -194,9 +194,8 @@ func TestGetUserByEmailAndPassword(t *testing.T) {
 func TestUpdatePassword(t *testing.T) {
 	clearUsers(t)
 	u := models.User{Email: "fake@email.com", Password: "correctPassword", ConfirmationPassword: "correctPassword" }
-	if err := db.CreateUser(&u); err != nil {
-		t.Fatal(err)
-	}
+	id := createTestUser(&u, t);
+	u.Id = id
 
 	t.Run("It fails if the previous password does not match", func(t *testing.T) {
 		previousPassword, password, confirmation := "wrongPassword", "newPassword", "newPassword"
@@ -276,5 +275,51 @@ func TestUpdatePassword(t *testing.T) {
 			t.Errorf("Expected %s, got %s", "fake_digest", passwordDigest)
 		}
 	})
+}
 
+func TestRemoveAllUserSessions(t *testing.T) {
+	clearUsers(t)
+	u := models.User{Email: "email@fake.com"}
+	id := createTestUser(&u, t)
+
+	_, err := db.Query(`
+		INSERT INTO user_sessions (user_id, token) VALUES ($1, $2), ($1, $3), ($1, $4)`,
+		id, "fake_token_1", "fake_token_2", "fake_token_3",
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	helperFunc := func(expected int, t *testing.T) {
+		t.Helper()
+		rows, err := db.Query("SELECT count(*) FROM user_sessions WHERE user_id = $1", id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var cnt int
+
+		for rows.Next() {
+			if err := rows.Scan(&cnt); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		if cnt != expected {
+			t.Errorf("Expected %d records for user_sessions, got %d", expected, cnt)
+		}
+	}
+
+	t.Run("Verify user sessions created", func(t *testing.T) {
+		helperFunc(3, t)
+	})
+
+	t.Run("Verify Remove All User Sessions", func(t *testing.T) {
+		if err := db.RemoveAllUserSessions(id); err != nil {
+			t.Fatal(err)
+		}
+
+		helperFunc(0, t)
+	})
 }
