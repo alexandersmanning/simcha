@@ -23,6 +23,8 @@ func createTestUser(u *models.User, t *testing.T) int {
 		RETURNING id
 	`, u.Email, u.PasswordDigest)
 
+	defer rows.Close()
+
 	if err != nil {
 		t.Fatal(err)
 	}
