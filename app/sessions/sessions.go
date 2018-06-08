@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/gorilla/sessions"
-	"errors"
 	"github.com/alexandersmanning/simcha/app/database"
 )
 
@@ -36,7 +35,7 @@ func (s *Session) Login(u *models.User, db database.Datastore, w http.ResponseWr
 		return err
 	}
 
-	session.Values["id"] = us.Id
+	session.Values["id"] = u.Id
 	session.Values["token"] = us.SessionToken
 
 	if err := session.Save(r, w); err != nil {
@@ -93,6 +92,11 @@ func (s *Session) CurrentUser(db database.Datastore, r *http.Request) (*models.U
 		return &u, err
 	}
 
+	// Return an empty user if id or token are null
+	if id == 0 || token == "" {
+		return &u, nil
+	}
+
 	u, err = db.GetUserBySessionToken(id, token)
 	return &u, err
 }
@@ -108,19 +112,10 @@ func getSessionValues(s *Session, r *http.Request) (int, string, error){
 	}
 
 	val := session.Values["id"]
-	id, ok := val.(int)
-
-	if !ok {
-		return id, token, errors.New("no session id found")
-	}
+	id, _ = val.(int)
 
 	val = session.Values["token"]
-	token, ok = val.(string)
-
-	if !ok {
-		return id, token, errors.New("no session token found")
-	}
-
+	token, _ = val.(string)
 
 	return  id, token, nil
 
