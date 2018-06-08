@@ -99,8 +99,8 @@ func TestLogin(t *testing.T) {
 
 	if id, ok := val.(int); !ok {
 		t.Errorf("Expected a val of %d, found nothing", us.Id)
-	} else if id != us.Id {
-		t.Errorf("Expected a val of %d, got %d", us.Id, id)
+	} else if id != u.Id {
+		t.Errorf("Expected a val of %d, got %d", u.Id, id)
 	}
 
 	val = testSession.Values["token"]

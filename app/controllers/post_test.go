@@ -12,6 +12,7 @@ import ( "bytes"
 	"github.com/alexandersmanning/simcha/app/config"
 	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/alexandersmanning/simcha/app/mocks/database"
+	"github.com/alexandersmanning/simcha/app/mocks/sessions"
 )
 
 func TestPostIndex(t *testing.T) {
@@ -61,9 +62,11 @@ func TestPostCreate(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockDatastore := mockdatabase.NewMockDatastore(mockCtrl)
-	env := config.Env{DB: mockDatastore}
+	mockSessionStore := mocksession.NewMockSessionStore(mockCtrl)
+	env := config.Env{DB: mockDatastore, Store: mockSessionStore}
 
-	post := models.Post{Body: "Test Create Body", Title: "Test Create Title"}
+	user := models.User{Id: 100, Email: "email@fake.com"}
+	post := models.Post{Body: "Test Create Body", Title: "Test Create Title", Author: user}
 	postJSON, err := json.Marshal(post)
 	postBuff := bytes.NewBuffer(postJSON)
 
@@ -75,6 +78,7 @@ func TestPostCreate(t *testing.T) {
 	req, _ := http.NewRequest("POST", "/posts", postBuff)
 
 	mockDatastore.EXPECT().CreatePost(post).Return(nil)
+	mockSessionStore.EXPECT().CurrentUser(mockDatastore, req).Return(&user, nil)
 
 	PostCreate(&env)(rec, req, nil)
 
