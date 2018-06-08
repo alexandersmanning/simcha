@@ -103,3 +103,48 @@ func TestGetUserBySessionToken(t *testing.T) {
 		}
 	})
 }
+
+func TestRemoveSessionToken(t *testing.T) {
+	clearUsers(t)
+	u := models.User{Email: "email@fake.com"}
+	id := createTestUser(&u, t)
+	u.Id = id
+
+	usOne :=createTestSession(u.Id, t)
+	usTwo :=createTestSession(u.Id, t)
+
+	t.Run("Remove session token only removes single token for user", func(t *testing.T) {
+		if err := db.RemoveSessionToken(u.Id, usOne.SessionToken); err != nil {
+			t.Fatal(err)
+		}
+
+		rows, err := db.Query(`
+			SELECT id, user_id, token FROM user_sessions WHERE user_id = $1
+		`, u.Id)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		defer rows.Close()
+
+		var userSession models.UserSession
+		var cnt int
+
+		for rows.Next() {
+			cnt++
+			if err := rows.Scan(&userSession.Id, &userSession.User.Id, &userSession.SessionToken); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		if cnt > 1 {
+			t.Errorf("Expected 1 entry left, got %d", cnt)
+		}
+
+		if !reflect.DeepEqual(usTwo, userSession) {
+			t.Errorf("Expected %v got %v", usTwo, userSession)
+		}
+	})
+}
+

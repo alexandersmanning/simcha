@@ -50,6 +50,14 @@ func PostCreate(env *config.Env) httprouter.Handle {
 			return
 		}
 
+		user, err := env.Store.CurrentUser(env.DB, r)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		post.Author = *user
+
 		err = env.DB.CreatePost(post)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
