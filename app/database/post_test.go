@@ -1,8 +1,11 @@
 package database
 
 import (
-	"testing"
+	"fmt"
 	"github.com/alexandersmanning/simcha/app/models"
+	"strings"
+	"testing"
+	"time"
 )
 
 func clearPosts(t *testing.T) {
@@ -15,6 +18,7 @@ func clearPosts(t *testing.T) {
 
 func TestPostCreation(t *testing.T) {
 	clearPosts(t)
+	clearUsers(t)
 
 	postHelper := func(expected int, t *testing.T) {
 		t.Helper()
@@ -44,12 +48,14 @@ func TestPostCreation(t *testing.T) {
 	})
 
 	t.Run("One post", func(t *testing.T) {
+		u := makeTestUser(t)
 		p := models.Post{
-			Body:  "Test Body",
-			Title: "Test Title",
+			Body:   "Test Body",
+			Title:  "Test Title",
+			Author: *u,
 		}
 
-		err := db.CreatePost(p)
+		err := db.CreatePost(&p)
 
 		if err != nil {
 			t.Fatal(err)
@@ -62,11 +68,37 @@ func TestPostCreation(t *testing.T) {
 func TestCreatePost(t *testing.T) {
 	t.Run("Handle posts without associated user", func(t *testing.T) {
 		clearPosts(t)
-		_, err := db.Query(
-			`INSERT INTO posts (body, title) VALUES
-			('body_1', 'title_1'),
-			('body_2', 'title_2')`)
+		clearUsers(t)
 
+		u := makeTestUser(t)
+
+		vals := []interface{}{}
+		testData := []struct {
+			body     string
+			title    string
+			id       int
+			created  time.Time
+			modified time.Time
+		}{
+			{"body_1", "title_1", u.Id, time.Now().UTC(), time.Now().UTC()},
+			{"body_2", "title_2", u.Id, time.Now().UTC(), time.Now().UTC()},
+			{"body_3", "title_3", u.Id, time.Now().UTC(), time.Now().UTC()},
+		}
+
+		sqlString := `INSERT INTO posts(body, title, user_id, created_at, modified_at) VALUES `
+		for idx, row := range testData {
+			sqlString += "("
+			for i := idx*5 + 1; i <= idx*5+5; i++ {
+				sqlString += fmt.Sprintf("$%d, ", i)
+			}
+			sqlString = strings.TrimSuffix(sqlString, ", ")
+			sqlString += "),"
+			vals = append(vals, row.body, row.title, row.id, row.created, row.modified)
+		}
+
+		sqlString = strings.TrimSuffix(sqlString, ",")
+		stmt, _ := db.Prepare(sqlString)
+		_, err := stmt.Exec(vals...)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -76,8 +108,8 @@ func TestCreatePost(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Run("Returns the correct number of elements", func(t *testing.T) {
-			if len(posts) != 2 {
-				t.Errorf("Expected 2 posts, got %d", len(posts))
+			if len(posts) != 3 {
+				t.Errorf("Expected 3 posts, got %d", len(posts))
 			}
 		})
 
@@ -96,25 +128,11 @@ func TestCreatePost(t *testing.T) {
 		clearPosts(t)
 		clearUsers(t)
 
-		rows, err := db.Query(`
-			INSERT INTO users (email) VALUES ('email@fake.com') RETURNING id
-		`)
+		u := makeTestUser(t)
 
-		var userID int
-
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		for rows.Next() {
-			if err := rows.Scan(&userID); err != nil {
-				t.Fatal(err)
-			}
-		}
-
-		_, err = db.Query(`
-			INSERT INTO posts (user_id, title, body) VALUES ($1, $2, $3)
-		`, userID, "title_3", "body_3")
+		_, err := db.Query(`
+			INSERT INTO posts (user_id, title, body, created_at, modified_at) VALUES ($1, $2, $3, $4, $5)
+		`, u.Id, "title_3", "body_3", time.Now().UTC(), time.Now().UTC())
 
 		if err != nil {
 			t.Fatal(err)
@@ -133,8 +151,8 @@ func TestCreatePost(t *testing.T) {
 
 		t.Run("Elements have the correct User and Body", func(t *testing.T) {
 			post := posts[0]
-			if post.Author.Email != "email@fake.com" {
-				t.Errorf("Expected user email to be %s, got %s", "email@fake.com", post.Author.Email)
+			if post.Author.Email != u.Email {
+				t.Errorf("Expected user email to be %s, got %s", u.Email, post.Author.Email)
 			}
 
 			if post.Body != "body_3" {

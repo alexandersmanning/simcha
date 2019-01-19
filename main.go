@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/joho/godotenv"
-	"github.com/julienschmidt/httprouter"
 	"github.com/alexandersmanning/simcha/app/config"
+	"github.com/alexandersmanning/simcha/app/database"
 	"github.com/alexandersmanning/simcha/app/routes"
 	"github.com/alexandersmanning/simcha/app/sessions"
-	"github.com/alexandersmanning/simcha/app/database"
+	"github.com/joho/godotenv"
+	"github.com/julienschmidt/httprouter"
 )
 
 func main() {
@@ -47,7 +47,7 @@ func main() {
 }
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	http.ServeFile(w, r, r.URL.Path[1:] + "public")
+	http.ServeFile(w, r, r.URL.Path[1:]+"public")
 	//	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	//	dat, err := ioutil.ReadFile("public/index.html")
 	//	if err == nil {

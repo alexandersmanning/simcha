@@ -22,7 +22,7 @@ func (db *DB) CreateUserSession(u *models.User) (models.UserSession, error){
 	}
 
 	rows, err := db.Query(`
-		INSERT INTO user_sessions (user_id, token)
+		INSERT INTO user_sessions (user_id, session_token)
 		VALUES ($1, $2) RETURNING id 
 	`, u.Id, token)
 
@@ -50,7 +50,7 @@ func (db *DB) GetUserBySessionToken(userId int, token string) (models.User, erro
 		SELECT DISTINCT users.id, users.email
 		FROM users
 		JOIN user_sessions ON (user_sessions.user_id = users.id)
-		WHERE user_sessions.user_id = $1 AND user_sessions.token = $2
+		WHERE user_sessions.user_id = $1 AND user_sessions.session_token = $2
 	`, userId, token)
 
 	defer rows.Close()
@@ -70,7 +70,7 @@ func (db *DB) GetUserBySessionToken(userId int, token string) (models.User, erro
 
 func (db *DB) RemoveSessionToken(userId int, token string) error {
 	rows, err := db.Query(`
-		DELETE FROM user_sessions WHERE user_id = $1 AND token = $2
+		DELETE FROM user_sessions WHERE user_id = $1 AND session_token = $2
 	`, userId, token)
 
 	defer rows.Close()

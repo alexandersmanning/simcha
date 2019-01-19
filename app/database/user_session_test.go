@@ -12,7 +12,7 @@ func createTestSession(userId int, t *testing.T) models.UserSession {
 		t.Fatal(err)
 	}
 	rows, err := db.Query(`
-		INSERT INTO user_sessions (user_id, token)
+		INSERT INTO user_sessions (user_id, session_token)
 		VALUES ($1, $2) RETURNING ID
 	`, userId, token)
 
@@ -119,7 +119,7 @@ func TestRemoveSessionToken(t *testing.T) {
 		}
 
 		rows, err := db.Query(`
-			SELECT id, user_id, token FROM user_sessions WHERE user_id = $1
+			SELECT id, user_id, session_token FROM user_sessions WHERE user_id = $1
 		`, u.Id)
 
 		if err != nil {

@@ -1,10 +1,10 @@
 package database
 
 import (
-	"testing"
-	"github.com/golang/mock/gomock"
-	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/alexandersmanning/simcha/app/mocks/model"
+	"github.com/alexandersmanning/simcha/app/models"
+	"github.com/golang/mock/gomock"
+	"testing"
 )
 
 func clearUsers(t *testing.T) {
@@ -13,29 +13,6 @@ func clearUsers(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-}
-
-func createTestUser(u *models.User, t *testing.T) int {
-	var id int
-
-	rows, err := db.Query(`
-		INSERT INTO users(email, password_digest) values ($1, $2)
-		RETURNING id
-	`, u.Email, u.PasswordDigest)
-
-	defer rows.Close()
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for rows.Next() {
-		if err := rows.Scan(&id); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	return id
 }
 
 func TestUserExists(t *testing.T) {
@@ -195,8 +172,8 @@ func TestGetUserByEmailAndPassword(t *testing.T) {
 
 func TestUpdatePassword(t *testing.T) {
 	clearUsers(t)
-	u := models.User{Email: "fake@email.com", Password: "correctPassword", ConfirmationPassword: "correctPassword" }
-	id := createTestUser(&u, t);
+	u := models.User{Email: "fake@email.com", Password: "correctPassword", ConfirmationPassword: "correctPassword"}
+	id := createTestUser(&u, t)
 	u.Id = id
 
 	t.Run("It fails if the previous password does not match", func(t *testing.T) {
@@ -209,10 +186,10 @@ func TestUpdatePassword(t *testing.T) {
 		userActions.EXPECT().ComparePassword(previousPassword).Return(expectedErr)
 
 		err := db.UpdatePassword(
-			 userActions,
-			 previousPassword,
-			 password,
-			 confirmation,
+			userActions,
+			previousPassword,
+			password,
+			confirmation,
 		)
 
 		if err == nil {

@@ -17,7 +17,7 @@ func Login(env *config.Env) httprouter.Handle {
 		defer r.Body.Close()
 
 		if err != nil {
-			jsonError(w,err, http.StatusInternalServerError)
+			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}
 
