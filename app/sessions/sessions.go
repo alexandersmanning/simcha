@@ -1,10 +1,10 @@
 package sessions
 
 import (
-	"net/http"
+	"github.com/alexandersmanning/simcha/app/database"
 	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/gorilla/sessions"
-	"github.com/alexandersmanning/simcha/app/database"
+	"net/http"
 )
 
 type SessionStore interface {
@@ -20,9 +20,8 @@ type Session struct {
 
 func InitStore(secret string) *Session {
 	cookieStore := sessions.NewCookieStore([]byte(secret))
-	return &Session{ cookieStore }
+	return &Session{cookieStore}
 }
-
 
 func (s *Session) Login(u *models.User, db database.Datastore, w http.ResponseWriter, r *http.Request) error {
 	session, err := s.Get(r, "session")
@@ -101,7 +100,7 @@ func (s *Session) CurrentUser(db database.Datastore, r *http.Request) (*models.U
 	return &u, err
 }
 
-func getSessionValues(s *Session, r *http.Request) (int, string, error){
+func getSessionValues(s *Session, r *http.Request) (int, string, error) {
 	session, err := s.Get(r, "session")
 
 	var id int
@@ -117,6 +116,6 @@ func getSessionValues(s *Session, r *http.Request) (int, string, error){
 	val = session.Values["token"]
 	token, _ = val.(string)
 
-	return  id, token, nil
+	return id, token, nil
 
 }

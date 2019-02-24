@@ -160,5 +160,92 @@ func TestCreatePost(t *testing.T) {
 			}
 		})
 	})
+}
 
+func TestEditPost(t *testing.T) {
+	clearPosts(t)
+	clearUsers(t)
+
+	u := makeTestUser(t)
+	timestamp := time.Now().UTC()
+	rows, err := db.Query(
+		`INSERT INTO posts (user_id, title, body, modified_at, created_at) VALUES ($1, $2, $3, $4, $4) RETURNING id`,
+		u.Id, "fakeTitle", "fakeBody", timestamp)
+
+	defer rows.Close()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var id int
+	for rows.Next() {
+		err := rows.Scan(&id)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Run("It updates the post", func(t *testing.T) {
+		p := models.Post{Id: id, Title: "UpdatedPost", Body: "UpdatedBody" }
+		p.SetTimestamps()
+
+		e := db.EditPost(&p)
+		if e != nil {
+			t.Fatal(e)
+		}
+
+		foundP := models.Post{}
+		rows, err := db.Query("SELECT title, body, created_at, modified_at FROM posts WHERE id = $1", id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for rows.Next() {
+			err := rows.Scan(&foundP.Title, &foundP.Body, &foundP.CreatedAt, &foundP.ModifiedAt)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		if foundP.Title != p.Title {
+			t.Errorf("Expected %s, got %s", p.Title, foundP.Title)
+		}
+
+		if foundP.ModifiedAt == foundP.CreatedAt {
+			t.Error("Expected modified date to be different than created date")
+		}
+	})
+}
+
+func TestGetPostByID(t *testing.T) {
+	u := makeTestUser(t)
+	var id string
+	insertPost := models.Post{Title: "fakeTitle", Body: "fakeBody", Author: *u}
+	insertPost.SetTimestamps()
+
+	rows, err := db.Query(`
+	  INSERT INTO posts (user_id, title, body, created_at, modified_at) VALUES ($1, $2, $3, $4, $5) RETURNING id
+   `, insertPost.Author.Id, insertPost.Title, insertPost.Body, insertPost.CreatedAt, insertPost.ModifiedAt)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for rows.Next() {
+		if err := rows.Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	p, err := db.GetPostById(id)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if p.Title != insertPost.Title || p.Body != insertPost.Body || p.Author.Id != insertPost.Author.Id {
+		t.Errorf("Expected post title and body to be %s and %s, got %s and %s", insertPost.Title, insertPost.Body, p.Title, p.Body)
+	}
 }

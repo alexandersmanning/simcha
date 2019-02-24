@@ -1,10 +1,9 @@
 package database
 
 import (
-	"github.com/alexandersmanning/webapputil"
 	"github.com/alexandersmanning/simcha/app/models"
+	"github.com/alexandersmanning/webapputil"
 )
-
 
 type UserSessionStore interface {
 	CreateUserSession(u *models.User) (models.UserSession, error)
@@ -13,7 +12,7 @@ type UserSessionStore interface {
 	RemoveAllUserSessions(userId int) error
 }
 
-func (db *DB) CreateUserSession(u *models.User) (models.UserSession, error){
+func (db *DB) CreateUserSession(u *models.User) (models.UserSession, error) {
 	var us models.UserSession
 
 	token, err := CreateSessionToken()
@@ -43,7 +42,7 @@ func (db *DB) CreateUserSession(u *models.User) (models.UserSession, error){
 	return us, nil
 }
 
-func (db *DB) GetUserBySessionToken(userId int, token string) (models.User, error){
+func (db *DB) GetUserBySessionToken(userId int, token string) (models.User, error) {
 	var u models.User
 
 	rows, err := db.Query(`
@@ -85,7 +84,7 @@ func (db *DB) RemoveSessionToken(userId int, token string) error {
 func (db *DB) RemoveAllUserSessions(userId int) error {
 	rows, err := db.Query(`
 		DELETE FROM user_sessions WHERE user_id = $1
-	`,userId)
+	`, userId)
 
 	defer rows.Close()
 

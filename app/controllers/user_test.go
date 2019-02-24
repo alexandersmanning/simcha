@@ -1,18 +1,18 @@
 package controllers
 
 import (
-	"testing"
-	"net/http"
-	"github.com/alexandersmanning/simcha/app/models"
-	"net/http/httptest"
 	"bytes"
 	"encoding/json"
-	"github.com/golang/mock/gomock"
-	"github.com/alexandersmanning/simcha/app/config"
 	"errors"
-	"io/ioutil"
+	"github.com/alexandersmanning/simcha/app/config"
 	"github.com/alexandersmanning/simcha/app/mocks/database"
 	"github.com/alexandersmanning/simcha/app/mocks/sessions"
+	"github.com/alexandersmanning/simcha/app/models"
+	"github.com/golang/mock/gomock"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 func TestUserCreate(t *testing.T) {
@@ -48,8 +48,15 @@ func TestUserCreate(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if string(msg) != `{"result":"", "error": "failure"}` {
-			t.Errorf("Expected an error, received %s", string(msg))
+		var resMsg JSONResponse
+		err = json.Unmarshal(msg, &resMsg)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if resMsg.Error != "failure" {
+			t.Errorf("Expected an error, received %s", resMsg.Error)
 		}
 	})
 }

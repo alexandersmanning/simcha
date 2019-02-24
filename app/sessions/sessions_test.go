@@ -1,13 +1,13 @@
 package sessions
 
 import (
-	"testing"
-	"os"
-	"net/http"
-	"net/http/httptest"
+	"github.com/alexandersmanning/simcha/app/mocks/database"
 	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/golang/mock/gomock"
-	"github.com/alexandersmanning/simcha/app/mocks/database"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
 )
 
 func TestMain(m *testing.M) {
@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 var session *Session
 
 func setupSessions() {
-	session = InitStore(os.Getenv("APPLICATION_SECRET"))
+	session = InitStore("12345678910")
 }
 
 func clearSessions(t *testing.T, req *http.Request) {
@@ -70,7 +70,6 @@ func verifySetLoginCredentials(t *testing.T, req *http.Request, id int, token st
 }
 
 func TestLogin(t *testing.T) {
-
 	req, _ := http.NewRequest("POST", "/login", nil)
 	rec := httptest.NewRecorder()
 

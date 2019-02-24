@@ -26,7 +26,7 @@ func (p *Post) SetID(id int) {
 }
 
 func (p *Post) SetTimestamps() {
-	if (p.CreatedAt == time.Time{}) {
+	if p.CreatedAt.IsZero() {
 		p.CreatedAt = time.Now().UTC()
 	}
 

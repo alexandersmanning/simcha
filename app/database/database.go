@@ -16,7 +16,6 @@ type Datastore interface {
 	UserSessionStore
 }
 
-
 //DB is the public struct whose methods interact directly with the database
 type DB struct {
 	*sql.DB

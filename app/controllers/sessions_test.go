@@ -75,8 +75,14 @@ func TestLogin(t *testing.T) {
 			t.Fatal(t)
 		}
 
-		if string(msg) != `{"result":"", "error": "no user found"}` {
-			t.Errorf("Expected an error, received %s instead", string(msg))
+		var bodyRes JSONResponse
+		err = json.Unmarshal(msg, &bodyRes)
+		if err != nil {
+			t.Fatal(t)
+		}
+
+		if bodyRes.Error != "no user found" {
+			t.Errorf("Expected an error, received %s instead", bodyRes.Error)
 		}
 	})
 }
@@ -128,8 +134,10 @@ func TestLogout(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if string(msg) != `{"result":"", "error": "session failed"}` {
-			t.Errorf("expected error result, got %s", string(msg))
+		var resMsg JSONResponse
+		err = json.Unmarshal(msg, &resMsg)
+		if resMsg.Error != "session failed" {
+			t.Errorf("expected error result, got %s", resMsg.Error)
 		}
 	})
 }

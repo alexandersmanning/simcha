@@ -5,6 +5,7 @@ import (
 	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/golang/mock/gomock"
 	"testing"
+	"time"
 )
 
 func clearUsers(t *testing.T) {
@@ -45,8 +46,10 @@ func TestUserExists(t *testing.T) {
 			{"email3@fake.com", false},
 		}
 
-		_, err := db.Query("INSERT INTO users (email) VALUES ($1), ($2)",
-			"email1@fake.com", "email2@fake.com")
+		dateVal := time.Now().UTC()
+
+		_, err := db.Query("INSERT INTO users (email, created_at, modified_at) VALUES ($1, $3, $3), ($2, $3, $3)",
+			"email1@fake.com", "email2@fake.com", dateVal)
 
 		if err != nil {
 			t.Fatal(err)
@@ -76,7 +79,8 @@ func TestCreateUser(t *testing.T) {
 	t.Run("User exists", func(t *testing.T) {
 		clearUsers(t)
 
-		if _, err := db.Query("INSERT INTO users (email) VALUES ($1)", email); err != nil {
+		dateVal := time.Now().UTC();
+		if _, err := db.Query("INSERT INTO users (email, created_at, modified_at) VALUES ($1, $2, $2)", email, dateVal); err != nil {
 			t.Fatal(err)
 		}
 
@@ -262,7 +266,7 @@ func TestRemoveAllUserSessions(t *testing.T) {
 	id := createTestUser(&u, t)
 
 	_, err := db.Query(`
-		INSERT INTO user_sessions (user_id, token) VALUES ($1, $2), ($1, $3), ($1, $4)`,
+		INSERT INTO user_sessions (user_id, session_token) VALUES ($1, $2), ($1, $3), ($1, $4)`,
 		id, "fake_token_1", "fake_token_2", "fake_token_3",
 	)
 

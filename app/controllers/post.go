@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
 	"net/http"
@@ -22,7 +21,6 @@ func PostIndex(env *config.Env) httprouter.Handle {
 		}
 
 		enc := json.NewEncoder(w)
-
 		err = enc.Encode(posts)
 
 		if err != nil {
@@ -38,7 +36,7 @@ func PostCreate(env *config.Env) httprouter.Handle {
 		defer r.Body.Close()
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}
 
@@ -46,27 +44,53 @@ func PostCreate(env *config.Env) httprouter.Handle {
 		err = json.Unmarshal(msg, &post)
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}
 
 		user, err := env.Store.CurrentUser(env.DB, r)
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			jsonError(w, err, http.StatusInternalServerError)
+			return
 		}
 
 		post.Author = *user
 
-		err = env.DB.CreatePost(post)
+		err = env.DB.CreatePost(&post)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
+		jsonResponse(w, "success")
+	}
+}
 
-		fmt.Fprint(w, `{"result": "success"}`)
+func PostUpdate(env *config.Env) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		bytes, err := ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+
+		if err != nil {
+			jsonError(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		var post models.Post
+		err = json.Unmarshal(bytes, &post)
+
+		if err != nil {
+			jsonError(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		err = env.DB.EditPost(&post)
+		if err != nil {
+			jsonError(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		jsonResponse(w, "success")
 	}
 }

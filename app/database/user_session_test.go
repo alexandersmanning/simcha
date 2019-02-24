@@ -71,7 +71,7 @@ func TestGetUserBySessionToken(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !reflect.DeepEqual(user, uOne) {
+		if uOne.Id != user.Id || uOne.Email != user.Email {
 			t.Errorf("Expected %v to equal %v", user, uOne)
 		}
 	})
@@ -98,7 +98,7 @@ func TestGetUserBySessionToken(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !reflect.DeepEqual(user, uTwo) {
+		if user.Email != uTwo.Email || user.Id != uTwo.Id {
 			t.Errorf("Expected %v to equal %v", user, uTwo)
 		}
 	})

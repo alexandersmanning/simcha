@@ -77,7 +77,7 @@ func TestPostCreate(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/posts", postBuff)
 
-	mockDatastore.EXPECT().CreatePost(post).Return(nil)
+	mockDatastore.EXPECT().CreatePost(&post).Return(nil)
 	mockSessionStore.EXPECT().CurrentUser(mockDatastore, req).Return(&user, nil)
 
 	PostCreate(&env)(rec, req, nil)
@@ -91,7 +91,44 @@ func TestPostCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if string(msg) != `{"result": "success"}` {
-		t.Errorf("Expected a successful result, got %q", string(msg))
+	var res JSONResponse
+	err = json.Unmarshal(msg, &res)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res.Result != "success" {
+		t.Errorf("Expected a successful result, got %q", res.Result)
+	}
+}
+
+func TestPostUpdate(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockDatastore := mockdatabase.NewMockDatastore(mockCtrl)
+
+	env := config.Env{DB: mockDatastore}
+
+	post := models.Post{Title: "UpdatedTitle", Body: "UpdatedBody" }
+	post.SetTimestamps()
+
+	postJSON, err := json.Marshal(post)
+	if err != nil {
+		t.Error(err)
+	}
+
+	postBuff := bytes.NewBuffer(postJSON)
+
+	rec := httptest.NewRecorder()
+	req, _ := http.NewRequest("PUT", "/posts", postBuff)
+
+	mockDatastore.EXPECT().EditPost(&post).Return(nil)
+	PostUpdate(&env)(rec, req, nil)
+
+	checkStatus(rec.Code, 200, t)
+	resHeader := rec.Header().Get("Content-type")
+	if resHeader != "application/json" {
+		t.Errorf("Expected header %s to have value %s, instead it had %s", "Content-type", "application/json", resHeader)
 	}
 }

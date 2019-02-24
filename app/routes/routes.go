@@ -10,8 +10,12 @@ import (
 
 func Router(env *config.Env) *httprouter.Router {
 	r := httprouter.New()
-	r.GET("/posts", middleware.LoggedIn(env, controllers.PostIndex(env)))
+	r.GET("/posts", controllers.PostIndex(env))
+	r.GET("/posts/:postId", controllers.PostIndex(env))
 	r.POST("/posts", middleware.LoggedIn(env, controllers.PostCreate(env)))
+	r.PUT("/posts/:postId", middleware.LoggedIn(env,
+		middleware.PostPermission(env, controllers.PostUpdate(env)),
+	))
 
 	r.POST("/users", controllers.UserCreate(env))
 
