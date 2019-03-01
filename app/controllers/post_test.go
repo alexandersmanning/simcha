@@ -1,6 +1,7 @@
 package controllers
 
-import ( "bytes"
+import (
+	"bytes"
 	"encoding/json"
 	"github.com/golang/mock/gomock"
 	"io/ioutil"
@@ -10,9 +11,9 @@ import ( "bytes"
 	"testing"
 
 	"github.com/alexandersmanning/simcha/app/config"
-	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/alexandersmanning/simcha/app/mocks/database"
 	"github.com/alexandersmanning/simcha/app/mocks/sessions"
+	"github.com/alexandersmanning/simcha/app/models"
 )
 
 func TestPostIndex(t *testing.T) {
@@ -110,7 +111,7 @@ func TestPostUpdate(t *testing.T) {
 
 	env := config.Env{DB: mockDatastore}
 
-	post := models.Post{Title: "UpdatedTitle", Body: "UpdatedBody" }
+	post := models.Post{Title: "UpdatedTitle", Body: "UpdatedBody"}
 	post.SetTimestamps()
 
 	postJSON, err := json.Marshal(post)

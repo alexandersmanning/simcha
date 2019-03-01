@@ -41,9 +41,20 @@ func main() {
 
 	port := os.Getenv("PORT")
 	fmt.Println("Listening on ", port)
-	if err := http.ListenAndServe(":"+port, r); err != nil {
+	if err := http.ListenAndServe(":"+port, &RouteServer{r}); err != nil {
 		panic(err)
 	}
+}
+
+type RouteServer struct {
+	r *httprouter.Router
+}
+
+func (s *RouteServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin",  fmt.Sprintf("%s*", os.Getenv("DOMAIN")))
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	s.r.ServeHTTP(w, r)
 }
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
