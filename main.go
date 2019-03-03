@@ -51,8 +51,9 @@ type RouteServer struct {
 }
 
 func (s *RouteServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin",  fmt.Sprintf("%s*", os.Getenv("DOMAIN")))
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Origin",  os.Getenv("DOMAIN"))
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
 	s.r.ServeHTTP(w, r)
 }
