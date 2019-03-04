@@ -42,3 +42,24 @@ func UserCreate(env *config.Env) httprouter.Handle {
 		fmt.Fprintf(w, `{"result": "%v"}`, u.Email)
 	}
 }
+
+func CurrentUser(env *config.Env) httprouter.Handle {
+	return func (w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		u, err := env.Store.CurrentUser(env.DB, r)
+
+		if err != nil {
+			jsonError(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		jsonBytes, err := json.Marshal(u)
+
+		if err != nil {
+			jsonError(w, err, http.StatusInternalServerError)
+		}
+
+		w.Header().Set("Content-type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonBytes)
+	}
+}

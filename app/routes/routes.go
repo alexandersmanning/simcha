@@ -17,6 +17,7 @@ func Router(env *config.Env) *httprouter.Router {
 		middleware.PostPermission(env, controllers.PostUpdate(env)),
 	))
 
+	r.GET("/currentUser", controllers.CurrentUser(env))
 	r.POST("/users", controllers.UserCreate(env))
 
 	r.POST("/login", controllers.Login(env))
