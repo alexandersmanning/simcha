@@ -38,9 +38,14 @@ func Login(env *config.Env) httprouter.Handle {
 			return
 		}
 
+		jsonUser, err := json.Marshal(&user)
+		if err != nil {
+			jsonError(w, err, http.StatusInternalServerError)
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, `{"result": "success"}`)
+		w.Write(jsonUser)
 	}
 }
 

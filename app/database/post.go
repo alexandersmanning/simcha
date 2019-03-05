@@ -82,11 +82,21 @@ func (db *DB) GetPostById(id string) (*models.Post, error) {
 func (db *DB) CreatePost(p models.PostAction) error {
 	post := p.Post()
 
-	_, err := db.Query(
+	rows, err := db.Query(
 		`INSERT INTO posts(user_id, title, body, created_at, modified_at)
 			   VALUES($1, $2, $3, $4, $5)
 			   RETURNING id`,
 		post.Author.Id, post.Title, post.Body, post.CreatedAt, post.ModifiedAt)
+
+	var id int
+	defer rows.Close()
+	for rows.Next() {
+		if err := rows.Scan(&id); err != nil {
+			return err
+		}
+	}
+
+	p.SetID(id)
 
 	return err
 }

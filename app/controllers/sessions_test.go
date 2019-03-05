@@ -46,8 +46,14 @@ func TestLogin(t *testing.T) {
 			t.Fatal(t)
 		}
 
-		if string(msg) != `{"result": "success"}` {
-			t.Errorf("Expected successful result, got %s", string(msg))
+		uFound := models.User{}
+		err = json.Unmarshal(msg, &uFound)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if u.Email != uFound.Email || u.Id != uFound.Id {
+			t.Errorf("Expected %v, got %v", u, uFound)
 		}
 	})
 

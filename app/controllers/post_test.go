@@ -92,14 +92,14 @@ func TestPostCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var res JSONResponse
+	var res models.Post
 	err = json.Unmarshal(msg, &res)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if res.Result != "success" {
-		t.Errorf("Expected a successful result, got %q", res.Result)
+	if res.Body != post.Body || res.Title != post.Title {
+		t.Errorf("Expected %v, got %v", post, res)
 	}
 }
 

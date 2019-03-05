@@ -63,7 +63,15 @@ func PostCreate(env *config.Env) httprouter.Handle {
 			return
 		}
 
-		jsonResponse(w, "success")
+
+		jsonPost, err := json.Marshal(&post)
+		if err != nil {
+			jsonError(w, err, http.StatusInternalServerError)
+		}
+
+		w.Header().Set("Content-type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonPost)
 	}
 }
 
