@@ -6,6 +6,7 @@ import "github.com/alexandersmanning/simcha/app/models"
 type PostStore interface {
 	AllPosts() ([]*models.Post, error)
 	CreatePost(p models.PostAction) error
+	DeletePost(id string) error
 	EditPost(p models.PostAction) error
 	GetPostById(id string) (*models.Post, error)
 }
@@ -13,7 +14,8 @@ type PostStore interface {
 //AllPosts queries the posts table and returns a slice of Post objects, or and error
 func (db *DB) AllPosts() ([]*models.Post, error) {
 	rows, err := db.Query(`
-		SELECT users.id,
+		SELECT posts.id,
+		       users.id,
 		       users.email,
 		       posts.body,
 		       posts.title,
@@ -34,7 +36,7 @@ func (db *DB) AllPosts() ([]*models.Post, error) {
 
 	for rows.Next() {
 		post := models.Post{}
-		if err := rows.Scan(&post.Author.Id, &post.Author.Email, &post.Body, &post.Title, &post.CreatedAt, &post.ModifiedAt); err != nil {
+		if err := rows.Scan(&post.Id, &post.Author.Id, &post.Author.Email, &post.Body, &post.Title, &post.CreatedAt, &post.ModifiedAt); err != nil {
 			return nil, err
 		}
 		posts = append(posts, &post)
@@ -81,6 +83,7 @@ func (db *DB) GetPostById(id string) (*models.Post, error) {
 //CreatePost creates a new Post object, and returns an ID of the created object
 func (db *DB) CreatePost(p models.PostAction) error {
 	post := p.Post()
+	post.SetTimestamps()
 
 	rows, err := db.Query(
 		`INSERT INTO posts(user_id, title, body, created_at, modified_at)
@@ -110,4 +113,13 @@ func (db *DB) EditPost(p models.PostAction) error {
 		post.Id, post.Title, post.Body, post.ModifiedAt)
 
 	return err
+}
+
+func (db *DB) DeletePost(id string) error {
+	_, err := db.Query(`DELETE FROM posts WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -91,6 +91,20 @@ func (mr *MockDatastoreMockRecorder) CreateUserSession(arg0 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserSession", reflect.TypeOf((*MockDatastore)(nil).CreateUserSession), arg0)
 }
 
+// DeletePost mocks base method
+func (m *MockDatastore) DeletePost(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeletePost", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeletePost indicates an expected call of DeletePost
+func (mr *MockDatastoreMockRecorder) DeletePost(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePost", reflect.TypeOf((*MockDatastore)(nil).DeletePost), arg0)
+}
+
 // EditPost mocks base method
 func (m *MockDatastore) EditPost(arg0 models.PostAction) error {
 	m.ctrl.T.Helper()

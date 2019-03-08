@@ -2,12 +2,12 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
+	"github.com/alexandersmanning/simcha/app/config"
+	"github.com/alexandersmanning/simcha/app/models"
 	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/alexandersmanning/simcha/app/config"
-	"github.com/alexandersmanning/simcha/app/models"
 )
 
 func PostIndex(env *config.Env) httprouter.Handle {
@@ -100,5 +100,22 @@ func PostUpdate(env *config.Env) httprouter.Handle {
 		}
 
 		jsonResponse(w, "success")
+	}
+}
+
+func PostDelete(env *config.Env) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		id := p.ByName("postId")
+		if id == "" {
+			jsonError(w, errors.New("post Id must be provided"), http.StatusBadRequest)
+			return
+		}
+
+		if err := env.DB.DeletePost(id); err != nil {
+			jsonError(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		jsonResponse(w, "Success")
 	}
 }

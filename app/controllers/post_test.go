@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/golang/mock/gomock"
+	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -132,4 +133,45 @@ func TestPostUpdate(t *testing.T) {
 	if resHeader != "application/json" {
 		t.Errorf("Expected header %s to have value %s, instead it had %s", "Content-type", "application/json", resHeader)
 	}
+}
+
+func TestPostDelete(t *testing.T) {
+	mockctrl := gomock.NewController(t)
+	mockdatastore := mockdatabase.NewMockDatastore(mockctrl)
+	env := config.Env{DB: mockdatastore}
+
+	r, _ := http.NewRequest("DELETE", "/post/2", nil)
+	t.Run("when request includes a postId param", func(t *testing.T) {
+		w := httptest.NewRecorder()
+
+		mockdatastore.EXPECT().DeletePost("2").Return(nil)
+		params := []httprouter.Param{{"postId", "2" }}
+		PostDelete(&env)(w, r, params)
+	})
+
+	t.Run("when request does not include a param", func(t *testing.T) {
+		w := httptest.NewRecorder()
+
+		mockdatastore.EXPECT().DeletePost(gomock.Any()).Times(0)
+		params := []httprouter.Param{}
+		PostDelete(&env)(w, r, params)
+
+		msg, err := ioutil.ReadAll(w.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var res JSONResponse
+		if err := json.Unmarshal(msg, &res); err != nil {
+			t.Fatal(err)
+		}
+
+		if w.Code != 400 {
+			t.Errorf("Expected a status of 400 got %d", w.Code)
+		}
+
+		if res.Error != "post Id must be provided" {
+			t.Errorf("Expected and error, got %s", res.Error)
+		}
+	})
 }

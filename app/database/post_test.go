@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"github.com/alexandersmanning/simcha/app/models"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -248,4 +249,67 @@ func TestGetPostByID(t *testing.T) {
 	if p.Title != insertPost.Title || p.Body != insertPost.Body || p.Author.Id != insertPost.Author.Id {
 		t.Errorf("Expected post title and body to be %s and %s, got %s and %s", insertPost.Title, insertPost.Body, p.Title, p.Body)
 	}
+}
+
+func TestDeletePost(t *testing.T) {
+	u := makeTestUser(t)
+	p := models.Post{ Title: "fakeTitle", Body: "fakeBody" }
+	p.SetTimestamps()
+
+	rows, err := db.Query(`
+		INSERT INTO posts (title, body, user_id, modified_at, created_at) VALUES($1, $2, $3, $4, $5) RETURNING id
+	`, p.Title, p.Body, u.Id, p.ModifiedAt, p.CreatedAt)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for rows.Next() {
+		err := rows.Scan(&p.Id)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Run("It created the post", func(t *testing.T) {
+		foundPost := models.Post{}
+		rows, err := db.Query(`SELECT id, title, body, user_id FROM posts WHERE id = $1`, p.Id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for rows.Next() {
+			err := rows.Scan(&foundPost.Id, &foundPost.Title, &foundPost.Body, &foundPost.Author.Id)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		if foundPost.Author.Id != u.Id || foundPost.Title != p.Title {
+			t.Errorf("Expected to get %v same post, got %v", p, foundPost)
+		}
+	})
+
+	t.Run("It deletes the post", func(t *testing.T) {
+		if err := db.DeletePost(strconv.Itoa(p.Id)); err != nil {
+			t.Fatal(err)
+		}
+
+		foundPost := models.Post{}
+		rows, err := db.Query(`SELECT id, title, body, user_id FROM posts WHERE id = $1`, p.Id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for rows.Next() {
+			err := rows.Scan(&foundPost.Id, &foundPost.Title, &foundPost.Body, &foundPost.Author.Id)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		if foundPost.Author.Id != 0 || foundPost.Title != "" || foundPost.Id != 0 {
+			t.Errorf("Expected an emty return, got %v", foundPost)
+		}
+	})
 }

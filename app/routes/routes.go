@@ -16,6 +16,9 @@ func Router(env *config.Env) *httprouter.Router {
 	r.PUT("/posts/:postId", middleware.LoggedIn(env,
 		middleware.PostPermission(env, controllers.PostUpdate(env)),
 	))
+	r.DELETE("/posts/:postId", middleware.LoggedIn(env,
+		middleware.PostPermission(env, controllers.PostDelete(env)),
+	))
 
 	r.GET("/currentUser", controllers.CurrentUser(env))
 	r.POST("/users", controllers.UserCreate(env))
