@@ -10,20 +10,41 @@ import (
 
 func Router(env *config.Env) *httprouter.Router {
 	r := httprouter.New()
-	r.GET("/posts", controllers.PostIndex(env))
-	r.GET("/posts/:postId", controllers.PostIndex(env))
-	r.POST("/posts", middleware.LoggedIn(env, controllers.PostCreate(env)))
+	r.GET("/posts", middleware.CSRFMiddleware(
+		env, controllers.PostIndex(env)),
+	)
+	r.GET("/posts/:postId", middleware.CSRFMiddleware(
+		env, controllers.PostIndex(env)),
+	)
+	r.POST("/posts", middleware.LoggedIn(
+		env, middleware.CSRFMiddleware(env, controllers.PostCreate(env))),
+	)
 	r.PUT("/posts/:postId", middleware.LoggedIn(env,
-		middleware.PostPermission(env, controllers.PostUpdate(env)),
+		middleware.PostPermission(
+			env, middleware.CSRFMiddleware(
+				env, controllers.PostUpdate(env),
+			),
+		),
 	))
 	r.DELETE("/posts/:postId", middleware.LoggedIn(env,
-		middleware.PostPermission(env, controllers.PostDelete(env)),
+		middleware.PostPermission(
+			env, middleware.CSRFMiddleware(
+				env, controllers.PostDelete(env),
+			),
+		),
 	))
 
-	r.GET("/currentUser", controllers.CurrentUser(env))
-	r.POST("/users", controllers.UserCreate(env))
-
-	r.POST("/login", controllers.Login(env))
-	r.GET("/logout", controllers.Logout(env))
+	r.GET("/currentUser", middleware.CSRFMiddleware(
+		env, controllers.CurrentUser(env),
+	))
+	r.POST("/users", middleware.CSRFMiddleware(
+		env, controllers.UserCreate(env),
+	))
+	r.POST("/login", middleware.CSRFMiddleware(
+		env, controllers.Login(env),
+	))
+	r.GET("/logout", middleware.CSRFMiddleware(
+		env, controllers.Logout(env),
+	))
 	return r
 }

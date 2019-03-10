@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gorilla/csrf"
 	"net/http"
 	"os"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/alexandersmanning/simcha/app/database"
 	"github.com/alexandersmanning/simcha/app/routes"
 	"github.com/alexandersmanning/simcha/app/sessions"
+
 	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
 )
@@ -41,21 +43,20 @@ func main() {
 
 	port := os.Getenv("PORT")
 	fmt.Println("Listening on ", port)
-	if err := http.ListenAndServe(":"+port, &RouteServer{r}); err != nil {
+	if err := http.ListenAndServe(":"+port, CorsHandler(csrf.Protect([]byte("32-byte-long-auth-key"), csrf.Secure(false))(r))); err != nil {
 		panic(err)
 	}
 }
 
-type RouteServer struct {
-	r *httprouter.Router
-}
-
-func (s *RouteServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin",  os.Getenv("DOMAIN"))
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-	s.r.ServeHTTP(w, r)
+func CorsHandler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin",  os.Getenv("DOMAIN"))
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		w.Header().Set("Access-Control-Expose-Headers", "Content-Type, Content-Length, X-CSRF-Token")
+		h.ServeHTTP(w, r)
+	})
 }
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
