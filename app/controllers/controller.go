@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"github.com/gorilla/csrf"
 	"net/http"
 )
 
@@ -23,14 +24,19 @@ func jsonError(w http.ResponseWriter, err error, status int) {
 	w.Write(resJSON)
 }
 
-func jsonResponse(w http.ResponseWriter, body string) {
+func jsonResponse(w http.ResponseWriter, r *http.Request, body string) {
 	res := JSONResponse{Result: body}
 	resJSON, err := json.Marshal(res)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
+	sendJsonResponse(w, r, resJSON)
+}
+
+func sendJsonResponse(w http.ResponseWriter, r *http.Request, body []byte) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write(resJSON)
+	w.Header().Set("X-CSRF-Token", csrf.Token(r))
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
 }

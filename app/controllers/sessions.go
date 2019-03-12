@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
 	"net/http"
@@ -43,9 +42,7 @@ func Login(env *config.Env) httprouter.Handle {
 			jsonError(w, err, http.StatusInternalServerError)
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(jsonUser)
+		sendJsonResponse(w, r, jsonUser)
 	}
 }
 
@@ -56,8 +53,6 @@ func Logout(env *config.Env) httprouter.Handle {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, `{"result": "success"}`)
+		jsonResponse(w, r, "success")
 	}
 }

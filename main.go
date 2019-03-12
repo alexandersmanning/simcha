@@ -43,7 +43,9 @@ func main() {
 
 	port := os.Getenv("PORT")
 	fmt.Println("Listening on ", port)
-	if err := http.ListenAndServe(":"+port, CorsHandler(csrf.Protect([]byte("32-byte-long-auth-key"), csrf.Secure(false))(r))); err != nil {
+	err = http.ListenAndServe(":"+port, CorsHandler(csrf.Protect([]byte(os.Getenv("APPLICATION_SECRET")), csrf.Secure(false))(r)))
+
+	if err != nil {
 		panic(err)
 	}
 }
@@ -61,28 +63,4 @@ func CorsHandler(h http.Handler) http.Handler {
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	http.ServeFile(w, r, r.URL.Path[1:]+"public")
-	//	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	//	dat, err := ioutil.ReadFile("public/index.html")
-	//	if err == nil {
-	//		fmt.Fprintf(w, string(dat))
-	//	} else {
-	//		fmt.Println(err)
-	//	}
 }
-
-//func PostsIndexHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-//	post := Post{Author: "Alex Manning", Title: "This is my post", Body: "Posts for Days"}
-//	enc := json.NewEncoder(w)
-//	//js, err := json.Marshal(post)
-//	//if err != nil {
-//	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-//	//	return
-//	//}
-//	w.Header().Set("Content-Type", "application/json")
-//	err := enc.Encode(post)
-//	if err != nil {
-//		http.Error(w, err.Error(), http.StatusInternalServerError)
-//		return
-//	}
-//	//fmt.Fprintln(w, string(js))
-//}

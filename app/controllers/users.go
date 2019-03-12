@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
 	"net/http"
@@ -37,9 +36,12 @@ func UserCreate(env *config.Env) httprouter.Handle {
 			return
 		}
 
-		w.Header().Set("Content-Type", "applicaiton/json")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, `{"result": "%v"}`, u.Email)
+		res, err := json.Marshal(u)
+		if err != nil {
+			jsonError(w, err, http.StatusInternalServerError)
+		}
+
+		sendJsonResponse(w, r, res)
 	}
 }
 
@@ -58,8 +60,6 @@ func CurrentUser(env *config.Env) httprouter.Handle {
 			jsonError(w, err, http.StatusInternalServerError)
 		}
 
-		w.Header().Set("Content-type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(jsonBytes)
+		sendJsonResponse(w, r, jsonBytes)
 	}
 }

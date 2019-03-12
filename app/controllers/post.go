@@ -20,13 +20,14 @@ func PostIndex(env *config.Env) httprouter.Handle {
 			return
 		}
 
-		enc := json.NewEncoder(w)
-		err = enc.Encode(posts)
+		body, err := json.Marshal(posts)
 
 		if err != nil {
 			jsonError(w, err, http.StatusInternalServerError)
 			return
 		}
+
+		sendJsonResponse(w, r, body)
 	}
 }
 
@@ -69,9 +70,7 @@ func PostCreate(env *config.Env) httprouter.Handle {
 			jsonError(w, err, http.StatusInternalServerError)
 		}
 
-		w.Header().Set("Content-type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(jsonPost)
+		sendJsonResponse(w, r, jsonPost)
 	}
 }
 
@@ -99,7 +98,9 @@ func PostUpdate(env *config.Env) httprouter.Handle {
 			return
 		}
 
-		jsonResponse(w, "success")
+		res := JSONResponse{ Result: "success" }
+		jsonRes, err := json.Marshal(&res)
+		sendJsonResponse(w, r, jsonRes)
 	}
 }
 
@@ -116,6 +117,6 @@ func PostDelete(env *config.Env) httprouter.Handle {
 			return
 		}
 
-		jsonResponse(w, "Success")
+		jsonResponse(w, r, "Success")
 	}
 }

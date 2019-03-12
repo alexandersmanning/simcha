@@ -118,7 +118,12 @@ func TestLogout(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if string(msg) != `{"result": "success"}` {
+		jsonRes := JSONResponse{};
+		if err := json.Unmarshal(msg, &jsonRes); err != nil {
+			t.Fatal(err)
+		}
+
+		if jsonRes.Result != "success" {
 			t.Errorf("Expected positive result, receive %s", string(msg))
 		}
 	})
